@@ -1,0 +1,41 @@
+<aside class="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-surface-container-high flex-col p-4 gap-y-2 z-50">
+  <!-- Logo -->
+  <div class="flex items-center gap-3 px-2 py-4 mb-6">
+    <div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+      <svg [lucideIcon]="LucideBrain" class="text-on-primary" [size]="20"></svg>
+    </div>
+    <div>
+      <h1 class="text-lg font-black tracking-tight text-primary font-headline">Curator AI</h1>
+      <p class="text-xs text-on-surface-variant font-medium">Local Intelligence</p>
+    </div>
+  </div>
+
+  <!-- New Collection Button -->
+  <button
+    class="mb-6 w-full flex items-center justify-center gap-2 bg-linear-to-r from-primary to-primary-container text-on-primary font-bold py-3 rounded-lg hover:scale-[0.98] transition-transform text-xs tracking-wider uppercase cursor-pointer">
+    <svg [lucideIcon]="LucidePlus" [size]="14"></svg>
+    New Collection
+  </button>
+
+  <!-- Navigation -->
+  <nav class="flex flex-col gap-1">
+    @for (item of navItems(); track item.route) {
+      <a
+        [routerLink]="item.route"
+        routerLinkActive="bg-surface-container-lowest text-primary-container font-semibold shadow-sm translate-x-1"
+        [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+        class="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-surface-container-low transition-all rounded-md">
+        <svg [lucideIcon]="item.icon" [size]="18"></svg>
+        <span class="text-sm">{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <!-- Status -->
+  <div class="mt-auto pt-4 flex flex-col gap-2">
+    <div class="flex items-center gap-3 px-3 py-2 text-tertiary-fixed-dim text-[11px] font-medium tracking-wide uppercase">
+      <svg [lucideIcon]="LucideActivity" [size]="12"></svg>
+      Local Status: Connected
+    </div>
+  </div>
+</aside>

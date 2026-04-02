@@ -1,0 +1,128 @@
+<div class="flex flex-col lg:flex-row gap-8">
+  <!-- Left: Workspace -->
+  <div class="flex-1 space-y-8">
+    <!-- Statistics Bar -->
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      @for (stat of stats(); track stat.label) {
+        <div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col gap-1">
+          <span class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">{{ stat.label }}</span>
+          <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-extrabold text-primary font-headline tracking-tight">{{ stat.value }}</span>
+            <span [class]="stat.suffixClass">{{ stat.suffix }}</span>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Header & CTA -->
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-extrabold text-on-surface font-headline tracking-tight">Mis Colecciones</h2>
+      <button
+        class="bg-linear-to-r from-primary to-primary-container text-on-primary px-6 py-3 rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-95 transition-all shadow-lg shadow-primary/10 cursor-pointer">
+        <svg [lucideIcon]="LucideCirclePlus" [size]="14"></svg>
+        Crear Nueva Colección
+      </button>
+    </div>
+
+    <!-- Collection Grid -->
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-24">
+      @for (collection of collections(); track collection.title) {
+        @if (collection.featured) {
+          <!-- Featured Card -->
+          <article class="group bg-primary-container p-8 rounded-xl shadow-xl overflow-hidden relative">
+            <div class="relative z-10 flex flex-col h-full">
+              <div class="flex justify-between items-start mb-6">
+                <div class="p-3 bg-white/10 rounded-lg">
+                  <svg [lucideIcon]="collection.icon" class="text-on-primary" [size]="20"></svg>
+                </div>
+                @if (collection.status) {
+                  <span class="bg-tertiary-fixed-dim text-on-tertiary-fixed px-2 py-1 rounded-md text-[9px] font-extrabold uppercase tracking-widest">
+                    {{ collection.status }}
+                  </span>
+                }
+              </div>
+              <h3 class="text-xl font-bold text-on-primary mb-2 font-headline">{{ collection.title }}</h3>
+              <p class="text-on-primary-container text-sm line-clamp-2 mb-6">{{ collection.description }}</p>
+              <div class="mt-auto flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <svg [lucideIcon]="LucideFileText" class="text-on-primary-container" [size]="14"></svg>
+                  <span class="text-xs font-semibold text-on-primary-container">{{ collection.documents }} Documentos</span>
+                </div>
+                <button class="bg-surface-container-lowest text-primary font-bold px-4 py-2 rounded text-xs uppercase tracking-widest hover:bg-surface-bright transition-colors cursor-pointer">
+                  Open
+                </button>
+              </div>
+            </div>
+            <div class="absolute -right-10 -bottom-10 opacity-10">
+              <svg [lucideIcon]="LucideTrendingUp" [size]="160"></svg>
+            </div>
+          </article>
+        } @else {
+          <!-- Standard Card -->
+          <article class="group bg-surface-container-lowest p-8 rounded-xl hover:-translate-y-1 transition-all duration-300">
+            <div class="flex justify-between items-start mb-6">
+              <div class="p-3 bg-surface-container-low rounded-lg group-hover:bg-primary/5 transition-colors">
+                <svg [lucideIcon]="collection.icon" class="text-primary" [size]="20"></svg>
+              </div>
+              <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{{ collection.updatedAt }}</span>
+            </div>
+            <h3 class="text-xl font-bold text-on-surface mb-2 font-headline">{{ collection.title }}</h3>
+            <p class="text-on-surface-variant text-sm line-clamp-2 mb-6">{{ collection.description }}</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <svg [lucideIcon]="LucideFileText" class="text-on-surface-variant" [size]="14"></svg>
+                <span class="text-xs font-semibold text-on-surface-variant">{{ collection.documents }} Documentos</span>
+              </div>
+              <button class="text-primary font-bold text-xs uppercase tracking-widest flex items-center gap-1 group-hover:gap-2 transition-all cursor-pointer">
+                Open
+                <svg [lucideIcon]="LucideArrowRight" [size]="12"></svg>
+              </button>
+            </div>
+          </article>
+        }
+      }
+    </section>
+  </div>
+
+  <!-- Right: Recent Activity Sidebar -->
+  <aside class="w-full lg:w-80 space-y-8">
+    <!-- Activity -->
+    <div class="bg-surface-container-high p-6 rounded-2xl">
+      <h2 class="text-sm font-extrabold text-on-surface font-headline uppercase tracking-widest mb-6">Actividad Reciente</h2>
+      <div class="space-y-6">
+        @for (activity of activities(); track activity.title) {
+          <div class="flex gap-4">
+            <div class="relative">
+              <div class="w-8 h-8 bg-surface-container-lowest rounded-full flex items-center justify-center">
+                <svg [lucideIcon]="activity.icon" [class]="activity.iconClass" [size]="14"></svg>
+              </div>
+              @if (activity.showConnector) {
+                <div class="absolute top-8 left-1/2 -translate-x-1/2 w-px h-6 bg-outline-variant/30"></div>
+              }
+            </div>
+            <div>
+              <p class="text-xs font-bold text-on-surface">{{ activity.title }}</p>
+              <p class="text-[10px] text-on-surface-variant mt-1">{{ activity.subtitle }}</p>
+              <p class="text-[10px] text-primary mt-1 font-semibold">{{ activity.time }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Usage Card -->
+    <div class="bg-linear-to-br from-secondary to-on-secondary-fixed p-6 rounded-2xl text-on-primary">
+      <h4 class="text-xs font-bold uppercase tracking-widest mb-4">Uso de Memoria Local</h4>
+      <div class="h-2 w-full bg-white/10 rounded-full mb-3 overflow-hidden">
+        <div
+          class="h-full bg-tertiary-fixed-dim rounded-full shadow-[0_0_8px_rgba(78,222,163,0.5)]"
+          [style.width.%]="memoryPercent()">
+        </div>
+      </div>
+      <div class="flex justify-between text-[10px] font-bold">
+        <span>{{ memoryUsed() }} GB USADOS</span>
+        <span>{{ memoryTotal() }} GB TOTAL</span>
+      </div>
+    </div>
+  </aside>
+</div>
