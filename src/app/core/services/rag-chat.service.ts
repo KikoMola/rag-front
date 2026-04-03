@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 const API_BASE = 'http://localhost:8000/api/knowledge';
 
 export interface RagStreamEvent {
-  type: 'token' | 'done' | 'error';
+  type: 'token' | 'thinking' | 'done' | 'error';
   token?: string;
   error?: string;
 }
@@ -34,6 +34,7 @@ export class RagChatService {
             const reader = response.body!.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let currentEventType = 'token';
 
             const pump = (): void => {
               reader
@@ -52,20 +53,24 @@ export class RagChatService {
                   buffer = lines.pop() ?? '';
 
                   for (const line of lines) {
-                    if (line.startsWith('data: ')) {
+                    if (line.startsWith('event: ')) {
+                      currentEventType = line.slice(7).trim();
+                    } else if (line.startsWith('data: ')) {
                       try {
                         const data = JSON.parse(line.slice(6));
-                        if (data.token) {
+                        if (currentEventType === 'thinking' && data.token) {
+                          this.zone.run(() => {
+                            subscriber.next({ type: 'thinking', token: data.token });
+                          });
+                        } else if (currentEventType === 'token' && data.token) {
                           this.zone.run(() => {
                             subscriber.next({ type: 'token', token: data.token });
                           });
-                        }
-                        if (data.status === 'complete') {
+                        } else if (currentEventType === 'done' || data.status === 'complete' || data.message_id != null) {
                           this.zone.run(() => {
                             subscriber.next({ type: 'done' });
                           });
-                        }
-                        if (data.error) {
+                        } else if (currentEventType === 'error' || data.error) {
                           this.zone.run(() => {
                             subscriber.next({ type: 'error', error: data.error });
                           });
@@ -73,6 +78,7 @@ export class RagChatService {
                       } catch {
                         // skip malformed JSON
                       }
+                      currentEventType = 'token';
                     }
                   }
 

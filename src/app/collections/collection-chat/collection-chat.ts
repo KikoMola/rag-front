@@ -130,45 +130,20 @@ export class CollectionChat implements OnInit, OnDestroy, AfterViewChecked {
 
     let fullResponse = '';
     let thinkingContent = '';
-    let isInThinkBlock = false;
 
     this.streamSub = this.ragChatService
       .queryCollection(this.collectionId(), question)
       .subscribe({
         next: (event) => {
+          if (event.type === 'thinking' && event.token) {
+            thinkingContent += event.token;
+            this.updateLastMessage(fullResponse, thinkingContent);
+            this.shouldScrollToBottom = true;
+          }
+
           if (event.type === 'token' && event.token) {
-            const token = event.token;
-            // Parse <think> blocks
-            const combined = (isInThinkBlock ? thinkingContent : fullResponse) + token;
-
-            if (!isInThinkBlock && combined.includes('<think>')) {
-              // Entering think block
-              const beforeThink = token.split('<think>')[0];
-              fullResponse += beforeThink;
-              isInThinkBlock = true;
-              const afterTag = token.split('<think>').slice(1).join('<think>');
-              thinkingContent += afterTag;
-            } else if (isInThinkBlock && combined.includes('</think>')) {
-              // Exiting think block
-              const beforeClose = token.split('</think>')[0];
-              thinkingContent += beforeClose;
-              isInThinkBlock = false;
-              const afterClose = token.split('</think>').slice(1).join('</think>');
-              fullResponse += afterClose;
-            } else if (isInThinkBlock) {
-              thinkingContent += token;
-            } else {
-              fullResponse += token;
-            }
-
-            this.messages.update((msgs) => {
-              const updated = [...msgs];
-              const last = { ...updated[updated.length - 1] };
-              last.content = fullResponse;
-              last.thinking = thinkingContent;
-              updated[updated.length - 1] = last;
-              return updated;
-            });
+            fullResponse += event.token;
+            this.updateLastMessage(fullResponse, thinkingContent);
             this.shouldScrollToBottom = true;
           }
 
@@ -244,6 +219,17 @@ export class CollectionChat implements OnInit, OnDestroy, AfterViewChecked {
       return updated;
     });
     this.streaming.set(false);
+  }
+
+  private updateLastMessage(content: string, thinking: string): void {
+    this.messages.update((msgs) => {
+      const updated = [...msgs];
+      const last = { ...updated[updated.length - 1] };
+      last.content = content;
+      last.thinking = thinking;
+      updated[updated.length - 1] = last;
+      return updated;
+    });
   }
 
   private scrollToBottom(): void {
