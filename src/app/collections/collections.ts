@@ -1,82 +1,117 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import {
-  LucideDynamicIcon,
-  LucideFileText,
-  LucideFileType,
-  LucideFileCode,
-  LucideCloudUpload,
-  LucideUpload,
-  LucideMessageSquare,
-  LucideEye,
-  LucideTrash2,
-  LucideRefreshCw,
-  LucideChevronRight,
-  LucideNetwork,
+    LucideDynamicIcon,
+    LucideCirclePlus,
+    LucideFolderOpen,
+    LucideFileText,
+    LucideArrowRight,
+    LucideTrash2,
+    LucideX,
+    LucideLoader,
 } from '@lucide/angular';
-import type { LucideIconInput } from '@lucide/angular';
-
-type DocumentStatus = 'embedded' | 'indexing' | 'pending';
-
-interface CollectionDocument {
-  name: string;
-  icon: LucideIconInput;
-  type: string;
-  size: string;
-  status: DocumentStatus;
-}
-
-interface CollectionMetric {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}
-
-interface ActivityEntry {
-  text: string;
-  detail: string;
-  color: 'tertiary' | 'surface-tint';
-}
+import { CollectionsService } from '../core/services/collections.service';
+import type { Collection } from '../core/models/collection.model';
 
 @Component({
-  selector: 'app-collections',
-  imports: [RouterLink, LucideDynamicIcon],
-  templateUrl: './collections.html',
-  styleUrl: './collections.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-collections',
+    imports: [ReactiveFormsModule, LucideDynamicIcon],
+    templateUrl: './collections.html',
+    styleUrl: './collections.css',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Collections {
-  protected readonly LucideFileText = LucideFileText;
-  protected readonly LucideFileType = LucideFileType;
-  protected readonly LucideFileCode = LucideFileCode;
-  protected readonly LucideCloudUpload = LucideCloudUpload;
-  protected readonly LucideUpload = LucideUpload;
-  protected readonly LucideMessageSquare = LucideMessageSquare;
-  protected readonly LucideEye = LucideEye;
-  protected readonly LucideTrash2 = LucideTrash2;
-  protected readonly LucideRefreshCw = LucideRefreshCw;
-  protected readonly LucideChevronRight = LucideChevronRight;
-  protected readonly LucideNetwork = LucideNetwork;
+export class Collections implements OnInit {
+    protected readonly LucideCirclePlus = LucideCirclePlus;
+    protected readonly LucideFolderOpen = LucideFolderOpen;
+    protected readonly LucideFileText = LucideFileText;
+    protected readonly LucideArrowRight = LucideArrowRight;
+    protected readonly LucideTrash2 = LucideTrash2;
+    protected readonly LucideX = LucideX;
+    protected readonly LucideLoader = LucideLoader;
 
-  collectionName = signal('Investigación Cuántica 2024');
-  totalSize = signal('124.5 MB');
-  totalDocuments = signal(18);
+    private readonly collectionsService = inject(CollectionsService);
+    private readonly router = inject(Router);
+    private readonly fb = inject(FormBuilder);
 
-  documents = signal<CollectionDocument[]>([
-    { name: 'teoria_campos_v2.pdf', icon: LucideFileText, type: 'PDF', size: '4.2 MB', status: 'embedded' },
-    { name: 'notas_laboratorio.txt', icon: LucideFileType, type: 'TXT', size: '12 KB', status: 'indexing' },
-    { name: 'resumen_ejecutivo.md', icon: LucideFileCode, type: 'MD', size: '45 KB', status: 'pending' },
-    { name: 'paper_final_physics.pdf', icon: LucideFileText, type: 'PDF', size: '12.8 MB', status: 'embedded' },
-  ]);
+    collections = signal<Collection[]>([]);
+    loading = signal(true);
+    showCreateForm = signal(false);
+    creating = signal(false);
+    deleting = signal<number | null>(null);
 
-  metrics = signal<CollectionMetric[]>([
-    { label: 'Vectores Generados', value: '42.8k' },
-    { label: 'Calidad de Indexado', value: '98%', highlight: true },
-    { label: 'Chunks de Texto', value: '12,402' },
-  ]);
+    totalDocuments = computed(() => this.collections().reduce((sum, c) => sum + c.document_count, 0));
 
-  activities = signal<ActivityEntry[]>([
-    { text: 'Indexado completado', detail: 'Hace 2 minutos • teoria_campos_v2.pdf', color: 'tertiary' },
-    { text: 'Nueva consulta al chat', detail: 'Hace 15 minutos • ¿Qué dice la sección 3?', color: 'surface-tint' },
-  ]);
+    createForm = this.fb.nonNullable.group({
+        name: ['', Validators.required],
+        description: [''],
+    });
+
+    ngOnInit(): void {
+        this.loadCollections();
+    }
+
+    loadCollections(): void {
+        this.loading.set(true);
+        this.collectionsService.getCollections().subscribe({
+            next: (collections) => {
+                this.collections.set(collections);
+                this.loading.set(false);
+            },
+            error: () => this.loading.set(false),
+        });
+    }
+
+    openCreateForm(): void {
+        this.createForm.reset();
+        this.showCreateForm.set(true);
+    }
+
+    cancelCreate(): void {
+        this.showCreateForm.set(false);
+    }
+
+    submitCreate(): void {
+        if (this.createForm.invalid) return;
+        this.creating.set(true);
+        const { name, description } = this.createForm.getRawValue();
+        this.collectionsService.createCollection({ name, description: description || null }).subscribe({
+            next: (collection) => {
+                this.creating.set(false);
+                this.showCreateForm.set(false);
+                this.collections.update((list) => [collection, ...list]);
+            },
+            error: () => this.creating.set(false),
+        });
+    }
+
+    deleteCollection(event: Event, id: number): void {
+        event.stopPropagation();
+        this.deleting.set(id);
+        this.collectionsService.deleteCollection(id).subscribe({
+            next: () => {
+                this.collections.update((list) => list.filter((c) => c.id !== id));
+                this.deleting.set(null);
+            },
+            error: () => this.deleting.set(null),
+        });
+    }
+
+    openCollection(id: number): void {
+        this.router.navigate(['/collections', id]);
+    }
+
+    formatDate(dateStr: string): string {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        if (diffMins < 1) return 'Ahora mismo';
+        if (diffMins < 60) return `Hace ${diffMins} min`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `Hace ${diffHours}h`;
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays < 7) return `Hace ${diffDays}d`;
+        return date.toLocaleDateString('es-ES');
+    }
 }

@@ -4,10 +4,10 @@ import { Sidebar } from './sidebar/sidebar';
 import { Navbar } from './navbar/navbar';
 
 @Component({
-  selector: 'app-layout',
-  imports: [RouterOutlet, Sidebar, Navbar],
-  templateUrl: './layout.html',
-  styleUrl: './layout.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-layout',
+    imports: [RouterOutlet, Sidebar, Navbar],
+    templateUrl: './layout.html',
+    styleUrl: './layout.css',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Layout {}
