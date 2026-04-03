@@ -101,8 +101,8 @@
                       </div>
                     </button>
                     @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
-                      <div class="mt-2 px-4 py-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant leading-relaxed whitespace-pre-wrap border-l-2 border-tertiary-fixed-dim/40">
-                        {{ msg.thinking }}
+                      <div class="mt-2 px-4 py-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant leading-relaxed border-l-2 border-tertiary-fixed-dim/40">
+                        <div class="prose prose-thinking" [innerHTML]="msg.thinking | markdown"></div>
                         @if (msg.streaming && !msg.content) {
                           <span class="inline-block w-1.5 h-4 bg-tertiary-fixed-dim/60 animate-pulse ml-0.5 align-middle"></span>
                         }
