@@ -1,20 +1,32 @@
 <app-sidebar />
 
 <main class="md:ml-64 min-h-screen relative flex flex-col">
-  <app-navbar />
+    <app-navbar />
 
-  <div class="p-8 flex-1">
-    <router-outlet />
-  </div>
+    <div class="p-8 flex-1">
+        <router-outlet />
+    </div>
 
-  <!-- Footer -->
-  <footer class="md:fixed md:bottom-0 md:right-0 md:w-[calc(100%-16rem)] px-6 py-2 bg-surface-container-low flex items-center justify-between z-30">
-    <div class="flex items-center gap-6">
-      <span class="text-[11px] font-medium tracking-wide uppercase text-tertiary-fixed-dim">Running Llama 3 via Local Node</span>
-    </div>
-    <div class="flex gap-4">
-      <a href="#" class="text-[11px] font-medium tracking-wide uppercase text-on-surface-variant hover:text-tertiary-fixed-dim transition-colors">System Logs</a>
-      <a href="#" class="text-[11px] font-medium tracking-wide uppercase text-on-surface-variant hover:text-tertiary-fixed-dim transition-colors">Documentation</a>
-    </div>
-  </footer>
+    <!-- Footer -->
+    <footer
+        class="md:fixed md:bottom-0 md:right-0 md:w-[calc(100%-16rem)] px-6 py-2 bg-surface-container-low flex items-center justify-between z-30"
+    >
+        <div class="flex items-center gap-6">
+            <span class="text-[11px] font-medium tracking-wide uppercase text-tertiary-fixed-dim"
+                >Running Llama 3 via Local Node</span
+            >
+        </div>
+        <div class="flex gap-4">
+            <a
+                href="#"
+                class="text-[11px] font-medium tracking-wide uppercase text-on-surface-variant hover:text-tertiary-fixed-dim transition-colors"
+                >System Logs</a
+            >
+            <a
+                href="#"
+                class="text-[11px] font-medium tracking-wide uppercase text-on-surface-variant hover:text-tertiary-fixed-dim transition-colors"
+                >Documentation</a
+            >
+        </div>
+    </footer>
 </main>

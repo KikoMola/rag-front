@@ -1,174 +1,214 @@
 @if (loading()) {
-  <div class="flex items-center justify-center h-full">
-    <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin"></svg>
-  </div>
+    <div class="flex items-center justify-center h-full">
+        <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin"></svg>
+    </div>
 } @else if (!collection()) {
-  <div class="flex flex-col items-center justify-center h-full text-center">
-    <h3 class="text-xl font-bold font-headline text-on-surface mb-2">Colección no encontrada</h3>
-    <a routerLink="/collections" class="text-primary font-bold text-sm mt-4">Volver a colecciones</a>
-  </div>
+    <div class="flex flex-col items-center justify-center h-full text-center">
+        <h3 class="text-xl font-bold font-headline text-on-surface mb-2">Colección no encontrada</h3>
+        <a routerLink="/collections" class="text-primary font-bold text-sm mt-4">Volver a colecciones</a>
+    </div>
 } @else {
-  <section class="flex flex-col h-full overflow-hidden">
-    <!-- Model Info Bar -->
-    <div class="px-8 py-2 bg-surface-container-highest/50 backdrop-blur-md flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <a
-          [routerLink]="['/collections', collectionId()]"
-          class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors"
-          aria-label="Volver a la colección">
-          <svg [lucideIcon]="LucideArrowLeft" class="size-4"></svg>
-        </a>
-        <div class="flex items-center gap-2">
-          <svg [lucideIcon]="LucideBot" class="size-4 text-primary"></svg>
-          <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">
-            RAG Chat — <span class="text-primary-container">{{ collection()!.name }}</span>
-          </span>
-        </div>
-      </div>
-      <nav class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-        <a routerLink="/collections" class="hover:text-primary transition-colors">Collections</a>
-        <svg [lucideIcon]="LucideChevronRight" class="size-3"></svg>
-        <a [routerLink]="['/collections', collectionId()]" class="hover:text-primary transition-colors">{{ collection()!.name }}</a>
-        <svg [lucideIcon]="LucideChevronRight" class="size-3"></svg>
-        <span class="text-primary">Chat</span>
-      </nav>
-    </div>
-
-    <!-- Chat Messages Area -->
-    <div #messagesContainer class="flex-1 overflow-y-auto px-8 lg:px-12 py-8">
-      @if (!hasMessages()) {
-        <!-- Empty State -->
-        <div class="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto">
-          <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
-            <svg [lucideIcon]="LucideSparkles" class="size-10 text-primary"></svg>
-          </div>
-          <h3 class="text-2xl font-bold font-headline text-on-surface mb-3">Pregunta a tus documentos</h3>
-          <p class="text-on-surface-variant text-sm leading-relaxed mb-8">
-            Escribe una pregunta y el sistema buscará en los documentos de
-            <span class="font-semibold text-on-surface">{{ collection()!.name }}</span>
-            para generar una respuesta fundamentada.
-          </p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-            <button
-              (click)="inputValue.set('¿Cuáles son los puntos clave de estos documentos?')"
-              class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright transition-colors cursor-pointer">
-              <span class="text-primary font-semibold">Resumen →</span><br/>
-              ¿Cuáles son los puntos clave?
-            </button>
-            <button
-              (click)="inputValue.set('¿Qué conclusiones se pueden extraer de la información disponible?')"
-              class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright transition-colors cursor-pointer">
-              <span class="text-primary font-semibold">Análisis →</span><br/>
-              ¿Qué conclusiones hay?
-            </button>
-          </div>
-        </div>
-      } @else {
-        <!-- Messages -->
-        <div class="space-y-6 max-w-6xl mx-auto">
-          @for (msg of messages(); track $index) {
-            @if (msg.role === 'user') {
-              <!-- User Message -->
-              <div class="flex flex-col items-end">
-                <div class="bg-primary text-on-primary p-5 rounded-2xl rounded-tr-none max-w-2xl">
-                  <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+    <section class="flex flex-col h-full overflow-hidden">
+        <!-- Model Info Bar -->
+        <div class="px-8 py-2 bg-surface-container-highest/50 backdrop-blur-md flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a
+                    [routerLink]="['/collections', collectionId()]"
+                    class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors"
+                    aria-label="Volver a la colección"
+                >
+                    <svg [lucideIcon]="LucideArrowLeft" class="size-4"></svg>
+                </a>
+                <div class="flex items-center gap-2">
+                    <svg [lucideIcon]="LucideBot" class="size-4 text-primary"></svg>
+                    <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">
+                        RAG Chat — <span class="text-primary-container">{{ collection()!.name }}</span>
+                    </span>
                 </div>
-                <span class="text-[10px] text-on-surface-variant mt-2 font-medium uppercase tracking-wider">
-                  Tú • {{ formatTime(msg.timestamp) }}
-                </span>
-              </div>
-            } @else {
-              <!-- Assistant Message -->
-              <div class="flex flex-col items-start">
-                <!-- Thinking Block -->
-                @if (msg.thinking) {
-                  <div class="mb-3 w-full max-w-5xl">
-                    <button
-                      (click)="toggleThinking($index)"
-                      class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors cursor-pointer group">
-                      <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-low group-hover:bg-surface-container transition-colors">
-                        <svg [lucideIcon]="LucideBrain" class="size-3.5 text-tertiary-fixed-dim"></svg>
-                        @if (msg.streaming && !msg.content) {
-                          <span class="text-tertiary-fixed-dim">Pensando...</span>
-                          <svg [lucideIcon]="LucideLoader" class="size-3 animate-spin text-tertiary-fixed-dim"></svg>
-                        } @else {
-                          <span>Razonamiento</span>
-                          <svg
-                            [lucideIcon]="LucideChevronDown"
-                            class="size-3 transition-transform"
-                            [class.rotate-180]="isThinkingExpanded($index)"></svg>
-                        }
-                      </div>
-                    </button>
-                    @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
-                      <div class="mt-2 px-4 py-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant leading-relaxed border-l-2 border-tertiary-fixed-dim/40">
-                        <div class="prose prose-thinking" [innerHTML]="msg.thinking | markdown"></div>
-                        @if (msg.streaming && !msg.content) {
-                          <span class="inline-block w-1.5 h-4 bg-tertiary-fixed-dim/60 animate-pulse ml-0.5 align-middle"></span>
-                        }
-                      </div>
-                    }
-                  </div>
-                }
-
-                <!-- Response Content -->
-                @if (msg.content || !msg.thinking) {
-                  <div class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none max-w-5xl border border-outline-variant/10">
-                    <div class="prose" [innerHTML]="msg.content | markdown"></div>
-                    @if (msg.streaming) {
-                      <span class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 align-middle"></span>
-                    }
-                  </div>
-                }
-
-                <span class="text-[10px] text-primary-container mt-2 font-bold uppercase tracking-widest flex items-center gap-1">
-                  <svg [lucideIcon]="LucideSparkles" class="size-3"></svg>
-                  C.O.R.E. • {{ formatTime(msg.timestamp) }}
-                </span>
-              </div>
-            }
-          }
-        </div>
-      }
-    </div>
-
-    <!-- Chat Input Area -->
-    <div class="p-6 pb-8 bg-linear-to-t from-surface-container-low via-surface-container-low to-transparent">
-      <div class="max-w-6xl mx-auto relative">
-        <div class="bg-surface-container-lowest rounded-2xl shadow-xl shadow-on-surface/5 p-2 border border-outline-variant/20 focus-within:ring-2 focus-within:ring-primary-container/20 transition-all">
-          <div class="flex items-end gap-2 p-1">
-            <textarea
-              class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-3 px-3 resize-none max-h-48 font-body"
-              placeholder="Pregunta sobre los documentos de esta colección..."
-              rows="1"
-              [value]="inputValue()"
-              (input)="inputValue.set($any($event.target).value)"
-              (keydown)="onKeydown($event)"
-            ></textarea>
-            <div class="flex items-center gap-1">
-              @if (streaming()) {
-                <button
-                  (click)="stopStream()"
-                  class="bg-error text-on-error h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all cursor-pointer"
-                  aria-label="Detener generación">
-                  <svg [lucideIcon]="LucideSquare" class="size-4"></svg>
-                </button>
-              } @else {
-                <button
-                  (click)="sendMessage()"
-                  [disabled]="!inputValue().trim()"
-                  class="bg-primary text-on-primary h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all disabled:opacity-40 cursor-pointer"
-                  aria-label="Enviar mensaje">
-                  <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
-                </button>
-              }
             </div>
-          </div>
+            <nav
+                class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant"
+            >
+                <a routerLink="/collections" class="hover:text-primary transition-colors">Collections</a>
+                <svg [lucideIcon]="LucideChevronRight" class="size-3"></svg>
+                <a [routerLink]="['/collections', collectionId()]" class="hover:text-primary transition-colors">{{
+                    collection()!.name
+                }}</a>
+                <svg [lucideIcon]="LucideChevronRight" class="size-3"></svg>
+                <span class="text-primary">Chat</span>
+            </nav>
         </div>
-        <p class="text-center text-[10px] text-on-surface-variant mt-3 font-medium uppercase tracking-widest opacity-60">
-          Las respuestas se basan exclusivamente en los documentos de esta colección
-        </p>
-      </div>
-    </div>
-  </section>
+
+        <!-- Chat Messages Area -->
+        <div #messagesContainer class="flex-1 overflow-y-auto px-8 lg:px-12 py-8">
+            @if (!hasMessages()) {
+                <!-- Empty State -->
+                <div class="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto">
+                    <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
+                        <svg [lucideIcon]="LucideSparkles" class="size-10 text-primary"></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold font-headline text-on-surface mb-3">Pregunta a tus documentos</h3>
+                    <p class="text-on-surface-variant text-sm leading-relaxed mb-8">
+                        Escribe una pregunta y el sistema buscará en los documentos de
+                        <span class="font-semibold text-on-surface">{{ collection()!.name }}</span>
+                        para generar una respuesta fundamentada.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                        <button
+                            (click)="inputValue.set('¿Cuáles son los puntos clave de estos documentos?')"
+                            class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright transition-colors cursor-pointer"
+                        >
+                            <span class="text-primary font-semibold">Resumen →</span><br />
+                            ¿Cuáles son los puntos clave?
+                        </button>
+                        <button
+                            (click)="
+                                inputValue.set('¿Qué conclusiones se pueden extraer de la información disponible?')
+                            "
+                            class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright transition-colors cursor-pointer"
+                        >
+                            <span class="text-primary font-semibold">Análisis →</span><br />
+                            ¿Qué conclusiones hay?
+                        </button>
+                    </div>
+                </div>
+            } @else {
+                <!-- Messages -->
+                <div class="space-y-6 max-w-6xl mx-auto">
+                    @for (msg of messages(); track $index) {
+                        @if (msg.role === 'user') {
+                            <!-- User Message -->
+                            <div class="flex flex-col items-end">
+                                <div class="bg-primary text-on-primary p-5 rounded-2xl rounded-tr-none max-w-2xl">
+                                    <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+                                </div>
+                                <span
+                                    class="text-[10px] text-on-surface-variant mt-2 font-medium uppercase tracking-wider"
+                                >
+                                    Tú • {{ formatTime(msg.timestamp) }}
+                                </span>
+                            </div>
+                        } @else {
+                            <!-- Assistant Message -->
+                            <div class="flex flex-col items-start">
+                                <!-- Thinking Block -->
+                                @if (msg.thinking) {
+                                    <div class="mb-3 w-full max-w-5xl">
+                                        <button
+                                            (click)="toggleThinking($index)"
+                                            class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors cursor-pointer group"
+                                        >
+                                            <div
+                                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-low group-hover:bg-surface-container transition-colors"
+                                            >
+                                                <svg
+                                                    [lucideIcon]="LucideBrain"
+                                                    class="size-3.5 text-tertiary-fixed-dim"
+                                                ></svg>
+                                                @if (msg.streaming && !msg.content) {
+                                                    <span class="text-tertiary-fixed-dim">Pensando...</span>
+                                                    <svg
+                                                        [lucideIcon]="LucideLoader"
+                                                        class="size-3 animate-spin text-tertiary-fixed-dim"
+                                                    ></svg>
+                                                } @else {
+                                                    <span>Razonamiento</span>
+                                                    <svg
+                                                        [lucideIcon]="LucideChevronDown"
+                                                        class="size-3 transition-transform"
+                                                        [class.rotate-180]="isThinkingExpanded($index)"
+                                                    ></svg>
+                                                }
+                                            </div>
+                                        </button>
+                                        @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
+                                            <div
+                                                class="mt-2 px-4 py-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant leading-relaxed border-l-2 border-tertiary-fixed-dim/40"
+                                            >
+                                                <div
+                                                    class="prose prose-thinking"
+                                                    [innerHTML]="msg.thinking | markdown"
+                                                ></div>
+                                                @if (msg.streaming && !msg.content) {
+                                                    <span
+                                                        class="inline-block w-1.5 h-4 bg-tertiary-fixed-dim/60 animate-pulse ml-0.5 align-middle"
+                                                    ></span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                <!-- Response Content -->
+                                @if (msg.content || !msg.thinking) {
+                                    <div
+                                        class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none max-w-5xl border border-outline-variant/10"
+                                    >
+                                        <div class="prose" [innerHTML]="msg.content | markdown"></div>
+                                        @if (msg.streaming) {
+                                            <span
+                                                class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 align-middle"
+                                            ></span>
+                                        }
+                                    </div>
+                                }
+
+                                <span
+                                    class="text-[10px] text-primary-container mt-2 font-bold uppercase tracking-widest flex items-center gap-1"
+                                >
+                                    <svg [lucideIcon]="LucideSparkles" class="size-3"></svg>
+                                    C.O.R.E. • {{ formatTime(msg.timestamp) }}
+                                </span>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Chat Input Area -->
+        <div class="p-6 pb-8 bg-linear-to-t from-surface-container-low via-surface-container-low to-transparent">
+            <div class="max-w-6xl mx-auto relative">
+                <div
+                    class="bg-surface-container-lowest rounded-2xl shadow-xl shadow-on-surface/5 p-2 border border-outline-variant/20 focus-within:ring-2 focus-within:ring-primary-container/20 transition-all"
+                >
+                    <div class="flex items-end gap-2 p-1">
+                        <textarea
+                            class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-3 px-3 resize-none max-h-48 font-body"
+                            placeholder="Pregunta sobre los documentos de esta colección..."
+                            rows="1"
+                            [value]="inputValue()"
+                            (input)="inputValue.set($any($event.target).value)"
+                            (keydown)="onKeydown($event)"
+                        ></textarea>
+                        <div class="flex items-center gap-1">
+                            @if (streaming()) {
+                                <button
+                                    (click)="stopStream()"
+                                    class="bg-error text-on-error h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all cursor-pointer"
+                                    aria-label="Detener generación"
+                                >
+                                    <svg [lucideIcon]="LucideSquare" class="size-4"></svg>
+                                </button>
+                            } @else {
+                                <button
+                                    (click)="sendMessage()"
+                                    [disabled]="!inputValue().trim()"
+                                    class="bg-primary text-on-primary h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all disabled:opacity-40 cursor-pointer"
+                                    aria-label="Enviar mensaje"
+                                >
+                                    <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <p
+                    class="text-center text-[10px] text-on-surface-variant mt-3 font-medium uppercase tracking-widest opacity-60"
+                >
+                    Las respuestas se basan exclusivamente en los documentos de esta colección
+                </p>
+            </div>
+        </div>
+    </section>
 }

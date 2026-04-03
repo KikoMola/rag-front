@@ -1,153 +1,169 @@
 <section class="flex flex-1 overflow-hidden h-full">
-  <!-- Document Pane (28%) -->
-  <div class="w-[28%] bg-surface flex flex-col p-6 overflow-y-auto">
-    <div class="mb-6">
-      <h3 class="text-xs font-black uppercase tracking-[0.2em] text-primary mb-4">Context Documents</h3>
-      <div class="space-y-3">
-        @for (doc of contextDocuments(); track doc.name) {
-          <div class="p-4 bg-surface-container-lowest rounded-xl shadow-sm hover:-translate-y-0.5 transition-all cursor-pointer group">
-            <div class="flex items-start gap-3">
-              <svg
-                [lucideIcon]="doc.icon"
-                class="size-5 text-primary-container"
-              ></svg>
-              <div class="flex-1">
-                <p class="text-sm font-bold text-on-surface leading-tight">{{ doc.name }}</p>
-                <p class="text-[11px] text-on-surface-variant mt-1">{{ doc.detail }}</p>
-              </div>
-              @if (doc.status === 'synced') {
-                <svg
-                  [lucideIcon]="LucideCircleCheck"
-                  class="size-4 text-on-tertiary-container bg-tertiary-fixed-dim rounded-full"
-                ></svg>
-              } @else {
-                <svg
-                  [lucideIcon]="LucideClock"
-                  class="size-4 text-outline"
-                ></svg>
-              }
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-
-    <!-- Indexing Status -->
-    <div class="mt-auto">
-      <div class="bg-primary-container/5 rounded-xl p-4 border border-primary-container/10">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-primary-container">Indexing Status</span>
-          <span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></span>
-        </div>
-        <p class="text-xs text-on-surface-variant leading-relaxed">
-          Embedding vectors into local ChromaDB storage for high-speed retrieval.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Chat Pane (72%) -->
-  <div class="flex-1 bg-surface-container-low flex flex-col relative">
-    <!-- Model Info Bar -->
-    <div class="px-8 py-2 bg-surface-container-highest/50 backdrop-blur-md flex items-center justify-between border-b border-outline-variant/10">
-      <div class="flex items-center gap-2">
-        <svg [lucideIcon]="LucideBot" class="size-4 text-primary"></svg>
-        <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">
-          Respondiendo con <span class="text-primary-container">Llama 3</span> — Contexto Local
-        </span>
-      </div>
-      <div class="flex items-center gap-4">
-        <button class="text-[10px] font-bold uppercase text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
-          <svg [lucideIcon]="LucideTrash2" class="size-3.5"></svg>
-          Clear Chat
-        </button>
-        <button class="text-[10px] font-bold uppercase text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
-          <svg [lucideIcon]="LucideShare" class="size-3.5"></svg>
-          Export History
-        </button>
-      </div>
-    </div>
-
-    <!-- Chat Messages Area -->
-    <div class="flex-1 overflow-y-auto px-12 py-8 space-y-8">
-      @for (msg of messages(); track $index) {
-        @if (msg.role === 'user') {
-          <div class="flex flex-col items-end max-w-2xl ml-auto">
-            <div class="bg-primary text-on-primary p-5 rounded-2xl rounded-tr-none shadow-sm">
-              @for (paragraph of msg.content; track $index) {
-                <p class="text-sm leading-relaxed">{{ paragraph }}</p>
-              }
-            </div>
-            <span class="text-[10px] text-on-surface-variant mt-2 font-medium uppercase tracking-tighter">{{ msg.time }}</span>
-          </div>
-        } @else {
-          <div class="flex flex-col items-start max-w-3xl">
-            <div class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none shadow-sm border border-outline-variant/10">
-              @for (paragraph of msg.content; track $index) {
-                <p class="text-base font-body leading-relaxed mb-4" [innerHTML]="paragraph"></p>
-              }
-
-              @if (msg.citations; as citations) {
-                <div class="flex flex-wrap gap-2 pt-4 border-t border-outline-variant/15">
-                  <span class="text-[10px] font-bold uppercase text-on-surface-variant w-full mb-1">Citations:</span>
-                  @for (citation of citations; track citation.label) {
-                    <a
-                      class="flex items-center gap-1.5 bg-surface-container-high px-3 py-1 rounded-full text-[11px] font-semibold text-primary hover:bg-secondary-container transition-colors cursor-pointer"
+    <!-- Document Pane (28%) -->
+    <div class="w-[28%] bg-surface flex flex-col p-6 overflow-y-auto">
+        <div class="mb-6">
+            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-primary mb-4">Context Documents</h3>
+            <div class="space-y-3">
+                @for (doc of contextDocuments(); track doc.name) {
+                    <div
+                        class="p-4 bg-surface-container-lowest rounded-xl shadow-sm hover:-translate-y-0.5 transition-all cursor-pointer group"
                     >
-                      <svg [lucideIcon]="LucideLink" class="size-3.5"></svg>
-                      {{ citation.label }}
-                    </a>
-                  }
-                </div>
-              }
+                        <div class="flex items-start gap-3">
+                            <svg [lucideIcon]="doc.icon" class="size-5 text-primary-container"></svg>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-on-surface leading-tight">{{ doc.name }}</p>
+                                <p class="text-[11px] text-on-surface-variant mt-1">{{ doc.detail }}</p>
+                            </div>
+                            @if (doc.status === 'synced') {
+                                <svg
+                                    [lucideIcon]="LucideCircleCheck"
+                                    class="size-4 text-on-tertiary-container bg-tertiary-fixed-dim rounded-full"
+                                ></svg>
+                            } @else {
+                                <svg [lucideIcon]="LucideClock" class="size-4 text-outline"></svg>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
-            <span class="text-[10px] text-primary-container mt-2 font-bold uppercase tracking-widest flex items-center gap-1">
-              <svg [lucideIcon]="LucideSparkles" class="size-3"></svg>
-              {{ msg.time }}
-            </span>
-          </div>
-        }
-      }
+        </div>
+
+        <!-- Indexing Status -->
+        <div class="mt-auto">
+            <div class="bg-primary-container/5 rounded-xl p-4 border border-primary-container/10">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-primary-container"
+                        >Indexing Status</span
+                    >
+                    <span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></span>
+                </div>
+                <p class="text-xs text-on-surface-variant leading-relaxed">
+                    Embedding vectors into local ChromaDB storage for high-speed retrieval.
+                </p>
+            </div>
+        </div>
     </div>
 
-    <!-- Chat Input Area -->
-    <div class="p-8 pb-12 bg-linear-to-t from-surface-container-low via-surface-container-low to-transparent">
-      <div class="max-w-4xl mx-auto relative">
-        <div class="bg-surface-container-lowest rounded-2xl shadow-xl shadow-on-surface/5 p-2 border border-outline-variant/20 focus-within:ring-2 focus-within:ring-primary-container/20 transition-all">
-          <div class="flex items-end gap-2 p-1">
-            <button
-              class="p-3 text-on-surface-variant hover:text-primary-container hover:bg-surface-container-low rounded-xl transition-all"
-              aria-label="Attach file"
-            >
-              <svg [lucideIcon]="LucidePaperclip" class="size-5"></svg>
-            </button>
-            <textarea
-              class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-3 px-2 resize-none max-h-48 font-body"
-              placeholder="Interroga a tu conocimiento local..."
-              rows="1"
-              [value]="inputValue()"
-              (input)="inputValue.set($any($event.target).value)"
-            ></textarea>
-            <div class="flex items-center gap-1">
-              <button
-                class="p-3 text-on-surface-variant hover:text-primary-container hover:bg-surface-container-low rounded-xl transition-all"
-                aria-label="Tune parameters"
-              >
-                <svg [lucideIcon]="LucideSlidersHorizontal" class="size-5"></svg>
-              </button>
-              <button
-                class="bg-primary text-on-primary h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all"
-                aria-label="Send message"
-              >
-                <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
-              </button>
+    <!-- Chat Pane (72%) -->
+    <div class="flex-1 bg-surface-container-low flex flex-col relative">
+        <!-- Model Info Bar -->
+        <div
+            class="px-8 py-2 bg-surface-container-highest/50 backdrop-blur-md flex items-center justify-between border-b border-outline-variant/10"
+        >
+            <div class="flex items-center gap-2">
+                <svg [lucideIcon]="LucideBot" class="size-4 text-primary"></svg>
+                <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">
+                    Respondiendo con <span class="text-primary-container">Llama 3</span> — Contexto Local
+                </span>
             </div>
-          </div>
+            <div class="flex items-center gap-4">
+                <button
+                    class="text-[10px] font-bold uppercase text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
+                >
+                    <svg [lucideIcon]="LucideTrash2" class="size-3.5"></svg>
+                    Clear Chat
+                </button>
+                <button
+                    class="text-[10px] font-bold uppercase text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
+                >
+                    <svg [lucideIcon]="LucideShare" class="size-3.5"></svg>
+                    Export History
+                </button>
+            </div>
         </div>
-        <p class="text-center text-[10px] text-on-surface-variant mt-4 font-medium uppercase tracking-widest opacity-60">
-          Powered by local hardware — Privacy Guaranteed
-        </p>
-      </div>
+
+        <!-- Chat Messages Area -->
+        <div class="flex-1 overflow-y-auto px-12 py-8 space-y-8">
+            @for (msg of messages(); track $index) {
+                @if (msg.role === 'user') {
+                    <div class="flex flex-col items-end max-w-2xl ml-auto">
+                        <div class="bg-primary text-on-primary p-5 rounded-2xl rounded-tr-none shadow-sm">
+                            @for (paragraph of msg.content; track $index) {
+                                <p class="text-sm leading-relaxed">{{ paragraph }}</p>
+                            }
+                        </div>
+                        <span class="text-[10px] text-on-surface-variant mt-2 font-medium uppercase tracking-tighter">{{
+                            msg.time
+                        }}</span>
+                    </div>
+                } @else {
+                    <div class="flex flex-col items-start max-w-3xl">
+                        <div
+                            class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none shadow-sm border border-outline-variant/10"
+                        >
+                            @for (paragraph of msg.content; track $index) {
+                                <p class="text-base font-body leading-relaxed mb-4" [innerHTML]="paragraph"></p>
+                            }
+
+                            @if (msg.citations; as citations) {
+                                <div class="flex flex-wrap gap-2 pt-4 border-t border-outline-variant/15">
+                                    <span class="text-[10px] font-bold uppercase text-on-surface-variant w-full mb-1"
+                                        >Citations:</span
+                                    >
+                                    @for (citation of citations; track citation.label) {
+                                        <a
+                                            class="flex items-center gap-1.5 bg-surface-container-high px-3 py-1 rounded-full text-[11px] font-semibold text-primary hover:bg-secondary-container transition-colors cursor-pointer"
+                                        >
+                                            <svg [lucideIcon]="LucideLink" class="size-3.5"></svg>
+                                            {{ citation.label }}
+                                        </a>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <span
+                            class="text-[10px] text-primary-container mt-2 font-bold uppercase tracking-widest flex items-center gap-1"
+                        >
+                            <svg [lucideIcon]="LucideSparkles" class="size-3"></svg>
+                            {{ msg.time }}
+                        </span>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Chat Input Area -->
+        <div class="p-8 pb-12 bg-linear-to-t from-surface-container-low via-surface-container-low to-transparent">
+            <div class="max-w-4xl mx-auto relative">
+                <div
+                    class="bg-surface-container-lowest rounded-2xl shadow-xl shadow-on-surface/5 p-2 border border-outline-variant/20 focus-within:ring-2 focus-within:ring-primary-container/20 transition-all"
+                >
+                    <div class="flex items-end gap-2 p-1">
+                        <button
+                            class="p-3 text-on-surface-variant hover:text-primary-container hover:bg-surface-container-low rounded-xl transition-all"
+                            aria-label="Attach file"
+                        >
+                            <svg [lucideIcon]="LucidePaperclip" class="size-5"></svg>
+                        </button>
+                        <textarea
+                            class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-3 px-2 resize-none max-h-48 font-body"
+                            placeholder="Interroga a tu conocimiento local..."
+                            rows="1"
+                            [value]="inputValue()"
+                            (input)="inputValue.set($any($event.target).value)"
+                        ></textarea>
+                        <div class="flex items-center gap-1">
+                            <button
+                                class="p-3 text-on-surface-variant hover:text-primary-container hover:bg-surface-container-low rounded-xl transition-all"
+                                aria-label="Tune parameters"
+                            >
+                                <svg [lucideIcon]="LucideSlidersHorizontal" class="size-5"></svg>
+                            </button>
+                            <button
+                                class="bg-primary text-on-primary h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all"
+                                aria-label="Send message"
+                            >
+                                <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p
+                    class="text-center text-[10px] text-on-surface-variant mt-4 font-medium uppercase tracking-widest opacity-60"
+                >
+                    Powered by local hardware — Privacy Guaranteed
+                </p>
+            </div>
+        </div>
     </div>
-  </div>
 </section>
