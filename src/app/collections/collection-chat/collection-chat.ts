@@ -26,6 +26,7 @@ import {
 import { Subscription } from 'rxjs';
 import { CollectionsService } from '../../core/services/collections.service';
 import { RagChatService } from '../../core/services/rag-chat.service';
+import { MarkdownPipe } from '../../core/pipes/markdown.pipe';
 import type { Collection } from '../../core/models/collection.model';
 
 interface ChatMessage {
@@ -38,7 +39,7 @@ interface ChatMessage {
 
 @Component({
   selector: 'app-collection-chat',
-  imports: [RouterLink, LucideDynamicIcon],
+  imports: [RouterLink, LucideDynamicIcon, MarkdownPipe],
   templateUrl: './collection-chat.html',
   styleUrl: './collection-chat.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
