@@ -24,7 +24,7 @@
       </div>
       <div class="flex items-center gap-3">
         <a
-          routerLink="/chat"
+          [routerLink]="['/collections', collectionId(), 'chat']"
           class="flex items-center gap-2 px-6 py-3 bg-surface-container-lowest text-primary font-bold text-[11px] tracking-widest uppercase rounded-md shadow-sm hover:bg-surface-bright transition-all"
         >
           <svg [lucideIcon]="LucideMessageSquare" class="size-4"></svg>
