@@ -1,159 +1,148 @@
-<div class="px-8 mt-8">
-  <!-- Breadcrumbs & Actions -->
-  <div class="flex justify-between items-end mb-8">
+<div class="px-8 mt-8 pb-24">
+  <!-- Header & CTA -->
+  <div class="flex items-center justify-between mb-8">
     <div>
-      <nav class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
-        <span>Collections</span>
-        <svg [lucideIcon]="LucideChevronRight" class="size-3"></svg>
-        <span class="text-primary">Research Archives</span>
-      </nav>
-      <h2 class="text-4xl font-extrabold tracking-tight font-headline text-on-surface">{{ collectionName() }}</h2>
+      <h2 class="text-4xl font-extrabold tracking-tight font-headline text-on-surface">Colecciones</h2>
       <p class="text-on-surface-variant mt-1">
-        Total: <span class="font-semibold text-on-surface">{{ totalSize() }}</span> • {{ totalDocuments() }} Documentos
+        {{ collections().length }} colecciones • {{ totalDocuments() }} documentos totales
       </p>
     </div>
-    <div class="flex items-center gap-3">
-      <a
-        routerLink="/chat"
-        class="flex items-center gap-2 px-6 py-3 bg-surface-container-lowest text-primary font-bold text-[11px] tracking-widest uppercase rounded-md shadow-sm hover:bg-surface-bright transition-all"
-      >
-        <svg [lucideIcon]="LucideMessageSquare" class="size-4"></svg>
-        Ir al Chat
-      </a>
-      <button class="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-primary to-primary-container text-on-primary font-bold text-[11px] tracking-widest uppercase rounded-md shadow-sm hover:opacity-90 transition-all">
-        <svg [lucideIcon]="LucideUpload" class="size-4"></svg>
-        Subir Documentos
-      </button>
-    </div>
+    <button
+      (click)="openCreateForm()"
+      class="bg-linear-to-r from-primary to-primary-container text-on-primary px-6 py-3 rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-95 transition-all shadow-lg shadow-primary/10 cursor-pointer">
+      <svg [lucideIcon]="LucideCirclePlus" [size]="14"></svg>
+      Nueva Colección
+    </button>
   </div>
 
-  <!-- Dashboard Grid Layout -->
-  <div class="grid grid-cols-12 gap-8">
-    <!-- Main Table Section (8 cols) -->
-    <div class="col-span-12 lg:col-span-8 space-y-6">
-      <!-- Drag & Drop Zone -->
-      <div class="relative group bg-surface-container-low border-2 border-dashed border-outline-variant/30 rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all hover:bg-surface-container hover:border-primary/40">
-        <div class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm">
-          <svg [lucideIcon]="LucideCloudUpload" class="size-8 text-primary"></svg>
-        </div>
-        <h3 class="font-headline font-bold text-on-surface">Arrastra archivos aquí</h3>
-        <p class="text-sm text-on-surface-variant max-w-xs mt-1">Soporta PDF, TXT y Markdown. Máximo 50MB por archivo.</p>
-      </div>
-
-      <!-- Document Table -->
-      <div class="bg-surface-container-low rounded-xl overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant bg-surface-container-highest/50">
-                <th class="px-6 py-4">File Name</th>
-                <th class="px-6 py-4">Type</th>
-                <th class="px-6 py-4">Size</th>
-                <th class="px-6 py-4">Status</th>
-                <th class="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-outline-variant/10">
-              @for (doc of documents(); track doc.name) {
-                <tr class="group hover:bg-surface-container-lowest transition-colors">
-                  <td class="px-6 py-5">
-                    <div class="flex items-center gap-3">
-                      <svg [lucideIcon]="doc.icon" class="size-5 text-on-surface-variant"></svg>
-                      <span class="font-medium text-on-surface">{{ doc.name }}</span>
-                    </div>
-                  </td>
-                  <td class="px-6 py-5 text-sm font-mono text-on-surface-variant">{{ doc.type }}</td>
-                  <td class="px-6 py-5 text-sm text-on-surface-variant">{{ doc.size }}</td>
-                  <td class="px-6 py-5">
-                    @switch (doc.status) {
-                      @case ('embedded') {
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-fixed-dim text-on-tertiary-fixed text-[10px] font-bold uppercase tracking-wider">
-                          <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
-                          Embedded
-                        </span>
-                      }
-                      @case ('indexing') {
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold uppercase tracking-wider animate-pulse">
-                          <svg [lucideIcon]="LucideRefreshCw" class="size-3"></svg>
-                          Indexing
-                        </span>
-                      }
-                      @case ('pending') {
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">
-                          Pending
-                        </span>
-                      }
-                    }
-                  </td>
-                  <td class="px-6 py-5 text-right">
-                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button class="p-1.5 text-on-surface-variant hover:text-primary transition-colors" aria-label="View document">
-                        <svg [lucideIcon]="LucideEye" class="size-4"></svg>
-                      </button>
-                      <button class="p-1.5 text-on-surface-variant hover:text-error transition-colors" aria-label="Delete document">
-                        <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sidebar Insights (4 cols) -->
-    <div class="col-span-12 lg:col-span-4 space-y-6">
-      <!-- Collection Stats Bento Card -->
-      <div class="bg-primary text-on-primary rounded-xl p-6 shadow-xl relative overflow-hidden">
-        <div class="relative z-10">
-          <h4 class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-4">Métricas de Colección</h4>
-          <div class="space-y-6">
-            @for (metric of metrics(); track metric.label; let last = $last) {
-              <div class="flex justify-between items-end" [class]="last ? '' : 'border-b border-on-primary-container/20 pb-4'">
-                <p class="text-sm">{{ metric.label }}</p>
-                <p class="text-2xl font-headline font-extrabold" [class.text-tertiary-fixed-dim]="metric.highlight">{{ metric.value }}</p>
-              </div>
-            }
-          </div>
-        </div>
-        <div class="absolute inset-0 bg-linear-to-br from-primary to-primary-container opacity-50"></div>
-        <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-on-primary/10 rounded-full blur-3xl"></div>
-      </div>
-
-      <!-- Model Configuration Card -->
-      <div class="bg-surface-container-low rounded-xl p-6">
-        <h4 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">Configuración Activa</h4>
-        <div class="flex items-center gap-4 mb-6">
-          <div class="w-12 h-12 bg-surface-container-highest rounded-lg flex items-center justify-center">
-            <svg [lucideIcon]="LucideNetwork" class="size-5 text-primary"></svg>
-          </div>
-          <div>
-            <p class="text-sm font-bold text-on-surface">Llama 3 (Local)</p>
-            <p class="text-xs text-on-surface-variant">Temp: 0.7 | Tokens: 4096</p>
-          </div>
-        </div>
-        <button class="w-full py-3 px-4 border border-outline-variant/30 text-[10px] font-bold uppercase tracking-widest text-on-surface rounded-md hover:bg-surface-container-highest transition-colors">
-          Cambiar Modelo
+  <!-- Create Collection Form -->
+  @if (showCreateForm()) {
+    <div class="bg-surface-container-lowest rounded-xl p-8 mb-8 animate-in">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-bold font-headline text-on-surface">Crear nueva colección</h3>
+        <button
+          (click)="cancelCreate()"
+          class="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+          aria-label="Cerrar formulario">
+          <svg [lucideIcon]="LucideX" class="size-5"></svg>
         </button>
       </div>
-
-      <!-- Activity Feed Card -->
-      <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10 shadow-sm">
-        <h4 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">Actividad Reciente</h4>
-        <div class="space-y-4">
-          @for (activity of activities(); track activity.text) {
-            <div class="flex gap-3">
-              <div class="mt-1 w-1.5 h-1.5 rounded-full" [class]="activity.color === 'tertiary' ? 'bg-tertiary' : 'bg-surface-tint'"></div>
-              <div>
-                <p class="text-xs font-semibold text-on-surface">{{ activity.text }}</p>
-                <p class="text-[10px] text-on-surface-variant">{{ activity.detail }}</p>
-              </div>
-            </div>
-          }
+      <form [formGroup]="createForm" (ngSubmit)="submitCreate()" class="space-y-4">
+        <div>
+          <label for="col-name" class="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
+            Nombre
+          </label>
+          <input
+            id="col-name"
+            formControlName="name"
+            type="text"
+            class="w-full px-4 py-3 bg-surface-container-highest rounded-lg text-sm text-on-surface focus:bg-surface-container-lowest focus:outline-2 focus:outline-surface-tint transition-all"
+            placeholder="Ej: Investigación Cuántica 2024"
+          />
         </div>
-      </div>
+        <div>
+          <label for="col-desc" class="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
+            Descripción
+          </label>
+          <textarea
+            id="col-desc"
+            formControlName="description"
+            rows="3"
+            class="w-full px-4 py-3 bg-surface-container-highest rounded-lg text-sm text-on-surface focus:bg-surface-container-lowest focus:outline-2 focus:outline-surface-tint transition-all resize-none"
+            placeholder="Opcional: describe el propósito de esta colección..."
+          ></textarea>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            (click)="cancelCreate()"
+            class="px-6 py-3 text-on-surface-variant font-bold text-xs uppercase tracking-widest rounded-md hover:bg-surface-container-highest transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="createForm.invalid || creating()"
+            class="px-6 py-3 bg-linear-to-r from-primary to-primary-container text-on-primary font-bold text-xs uppercase tracking-widest rounded-md hover:opacity-90 transition-all disabled:opacity-50 cursor-pointer">
+            @if (creating()) {
+              <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
+            } @else {
+              Crear Colección
+            }
+          </button>
+        </div>
+      </form>
     </div>
-  </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="flex items-center justify-center py-24">
+      <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin"></svg>
+    </div>
+  } @else if (collections().length === 0) {
+    <!-- Empty State -->
+    <div class="flex flex-col items-center justify-center py-24 text-center">
+      <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
+        <svg [lucideIcon]="LucideFolderOpen" class="size-10 text-on-surface-variant"></svg>
+      </div>
+      <h3 class="text-xl font-bold font-headline text-on-surface mb-2">No hay colecciones</h3>
+      <p class="text-on-surface-variant max-w-md mb-8">
+        Las colecciones agrupan tus documentos por temática. Crea tu primera colección para empezar a indexar documentos.
+      </p>
+      <button
+        (click)="openCreateForm()"
+        class="bg-linear-to-r from-primary to-primary-container text-on-primary px-6 py-3 rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-95 transition-all cursor-pointer">
+        <svg [lucideIcon]="LucideCirclePlus" [size]="14"></svg>
+        Crear Primera Colección
+      </button>
+    </div>
+  } @else {
+    <!-- Collection Grid -->
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      @for (collection of collections(); track collection.id) {
+        <article
+          (click)="openCollection(collection.id)"
+          (keydown.enter)="openCollection(collection.id)"
+          tabindex="0"
+          role="link"
+          class="group bg-surface-container-lowest p-8 rounded-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer focus:outline-2 focus:outline-primary">
+          <div class="flex justify-between items-start mb-6">
+            <div class="p-3 bg-surface-container-low rounded-lg group-hover:bg-primary/5 transition-colors">
+              <svg [lucideIcon]="LucideFolderOpen" class="text-primary" [size]="20"></svg>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+                {{ formatDate(collection.created_at) }}
+              </span>
+              <button
+                (click)="deleteCollection($event, collection.id)"
+                [disabled]="deleting() === collection.id"
+                class="p-1.5 text-on-surface-variant hover:text-error transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                aria-label="Eliminar colección">
+                @if (deleting() === collection.id) {
+                  <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
+                } @else {
+                  <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
+                }
+              </button>
+            </div>
+          </div>
+          <h3 class="text-xl font-bold text-on-surface mb-2 font-headline">{{ collection.name }}</h3>
+          <p class="text-on-surface-variant text-sm line-clamp-2 mb-6">
+            {{ collection.description ?? 'Sin descripción' }}
+          </p>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <svg [lucideIcon]="LucideFileText" class="text-on-surface-variant" [size]="14"></svg>
+              <span class="text-xs font-semibold text-on-surface-variant">{{ collection.document_count }} Documentos</span>
+            </div>
+            <span class="text-primary font-bold text-xs uppercase tracking-widest flex items-center gap-1 group-hover:gap-2 transition-all">
+              Abrir
+              <svg [lucideIcon]="LucideArrowRight" [size]="12"></svg>
+            </span>
+          </div>
+        </article>
+      }
+    </section>
+  }
 </div>

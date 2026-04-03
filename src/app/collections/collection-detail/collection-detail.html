@@ -1,0 +1,193 @@
+<div class="px-8 mt-8 pb-24">
+  @if (loading()) {
+    <div class="flex items-center justify-center py-24">
+      <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin"></svg>
+    </div>
+  } @else if (!collection()) {
+    <div class="flex flex-col items-center justify-center py-24 text-center">
+      <h3 class="text-xl font-bold font-headline text-on-surface mb-2">Colección no encontrada</h3>
+      <a routerLink="/collections" class="text-primary font-bold text-sm mt-4">Volver a colecciones</a>
+    </div>
+  } @else {
+    <!-- Breadcrumbs & Actions -->
+    <div class="flex justify-between items-end mb-8">
+      <div>
+        <nav class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">
+          <a routerLink="/collections" class="hover:text-primary transition-colors">Collections</a>
+          <svg [lucideIcon]="LucideChevronRight" class="size-3"></svg>
+          <span class="text-primary">{{ collection()!.name }}</span>
+        </nav>
+        <h2 class="text-4xl font-extrabold tracking-tight font-headline text-on-surface">{{ collection()!.name }}</h2>
+        <p class="text-on-surface-variant mt-1">
+          Total: <span class="font-semibold text-on-surface">{{ totalSize() }}</span> • {{ documents().length }} Documentos
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a
+          routerLink="/chat"
+          class="flex items-center gap-2 px-6 py-3 bg-surface-container-lowest text-primary font-bold text-[11px] tracking-widest uppercase rounded-md shadow-sm hover:bg-surface-bright transition-all"
+        >
+          <svg [lucideIcon]="LucideMessageSquare" class="size-4"></svg>
+          Ir al Chat
+        </a>
+        <label
+          class="flex items-center gap-2 px-6 py-3 bg-linear-to-r from-primary to-primary-container text-on-primary font-bold text-[11px] tracking-widest uppercase rounded-md shadow-sm hover:opacity-90 transition-all cursor-pointer">
+          <svg [lucideIcon]="LucideUpload" class="size-4"></svg>
+          Subir Documentos
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.docx,.epub,.html,.htm,.txt,.md"
+            class="hidden"
+            (change)="onFileSelect($event)"
+          />
+        </label>
+      </div>
+    </div>
+
+    <!-- Dashboard Grid Layout -->
+    <div class="grid grid-cols-12 gap-8">
+      <!-- Main Table Section (8 cols) -->
+      <div class="col-span-12 lg:col-span-8 space-y-6">
+        <!-- Drag & Drop Zone -->
+        <div
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave()"
+          (drop)="onDrop($event)"
+          class="relative group bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all"
+          [class.bg-primary/5]="dragging()"
+          [class.border-primary/60]="dragging()"
+          [class.border-outline-variant/30]="!dragging()"
+          style="border: 2px dashed">
+          @if (uploading()) {
+            <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin mb-4"></svg>
+            <h3 class="font-headline font-bold text-on-surface">Subiendo archivos...</h3>
+          } @else {
+            <div class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm">
+              <svg [lucideIcon]="LucideCloudUpload" class="size-8 text-primary"></svg>
+            </div>
+            <h3 class="font-headline font-bold text-on-surface">Arrastra archivos aquí</h3>
+            <p class="text-sm text-on-surface-variant max-w-xs mt-1">Soporta PDF, DOCX, EPUB, HTML, TXT y Markdown.</p>
+          }
+        </div>
+
+        <!-- Document Table -->
+        @if (documents().length > 0) {
+          <div class="bg-surface-container-low rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant bg-surface-container-highest/50">
+                    <th class="px-6 py-4">Archivo</th>
+                    <th class="px-6 py-4">Formato</th>
+                    <th class="px-6 py-4">Tamaño</th>
+                    <th class="px-6 py-4">Chunks</th>
+                    <th class="px-6 py-4">Estado</th>
+                    <th class="px-6 py-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant/10">
+                  @for (doc of documents(); track doc.id) {
+                    <tr class="group hover:bg-surface-container-lowest transition-colors">
+                      <td class="px-6 py-5">
+                        <div class="flex items-center gap-3">
+                          <svg [lucideIcon]="getFormatIcon(doc.format)" class="size-5 text-on-surface-variant"></svg>
+                          <span class="font-medium text-on-surface">{{ doc.filename }}</span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-5 text-sm font-mono text-on-surface-variant uppercase">{{ doc.format }}</td>
+                      <td class="px-6 py-5 text-sm text-on-surface-variant">{{ formatBytes(doc.size_bytes) }}</td>
+                      <td class="px-6 py-5 text-sm text-on-surface-variant">{{ doc.chunk_count }}</td>
+                      <td class="px-6 py-5">
+                        @switch (doc.status) {
+                          @case ('indexed') {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-fixed-dim text-on-tertiary-fixed text-[10px] font-bold uppercase tracking-wider">
+                              <svg [lucideIcon]="LucideCheckCircle2" class="size-3"></svg>
+                              Indexado
+                            </span>
+                          }
+                          @case ('processing') {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                              <svg [lucideIcon]="LucideRefreshCw" class="size-3"></svg>
+                              Procesando
+                            </span>
+                          }
+                          @case ('pending') {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">
+                              Pendiente
+                            </span>
+                          }
+                          @case ('error') {
+                            <span
+                              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container text-[10px] font-bold uppercase tracking-wider"
+                              [title]="doc.error_message ?? ''">
+                              <svg [lucideIcon]="LucideAlertCircle" class="size-3"></svg>
+                              Error
+                            </span>
+                          }
+                        }
+                      </td>
+                      <td class="px-6 py-5 text-right">
+                        <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            (click)="deleteDocument($event, doc.id)"
+                            [disabled]="deletingDoc() === doc.id"
+                            class="p-1.5 text-on-surface-variant hover:text-error transition-colors cursor-pointer"
+                            aria-label="Eliminar documento">
+                            @if (deletingDoc() === doc.id) {
+                              <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
+                            } @else {
+                              <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
+                            }
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        } @else {
+          <div class="text-center py-12 text-on-surface-variant text-sm">
+            No hay documentos. Sube archivos usando la zona de arriba.
+          </div>
+        }
+      </div>
+
+      <!-- Sidebar Insights (4 cols) -->
+      <div class="col-span-12 lg:col-span-4 space-y-6">
+        <!-- Collection Stats Bento Card -->
+        <div class="bg-primary text-on-primary rounded-xl p-6 shadow-xl relative overflow-hidden">
+          <div class="relative z-10">
+            <h4 class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-4">Métricas de Colección</h4>
+            <div class="space-y-6">
+              <div class="flex justify-between items-end border-b border-on-primary-container/20 pb-4">
+                <p class="text-sm">Documentos Indexados</p>
+                <p class="text-2xl font-headline font-extrabold text-tertiary-fixed-dim">{{ indexedCount() }}/{{ documents().length }}</p>
+              </div>
+              <div class="flex justify-between items-end border-b border-on-primary-container/20 pb-4">
+                <p class="text-sm">Chunks de Texto</p>
+                <p class="text-2xl font-headline font-extrabold">{{ totalChunks() | number }}</p>
+              </div>
+              <div class="flex justify-between items-end">
+                <p class="text-sm">Tamaño Total</p>
+                <p class="text-2xl font-headline font-extrabold">{{ totalSize() }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="absolute inset-0 bg-linear-to-br from-primary to-primary-container opacity-50"></div>
+          <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-on-primary/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <!-- Description Card -->
+        @if (collection()!.description) {
+          <div class="bg-surface-container-low rounded-xl p-6">
+            <h4 class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">Descripción</h4>
+            <p class="text-sm text-on-surface leading-relaxed">{{ collection()!.description }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

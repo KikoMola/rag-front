@@ -15,6 +15,11 @@ export const routes: Routes = [
         loadComponent: () => import('./collections/collections').then((m) => m.Collections),
       },
       {
+        path: 'collections/:id',
+        loadComponent: () =>
+          import('./collections/collection-detail/collection-detail').then((m) => m.CollectionDetail),
+      },
+      {
         path: 'chat',
         loadComponent: () => import('./chat/chat').then((m) => m.Chat),
       },
