@@ -1,34 +1,25 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import {
   LucideDynamicIcon,
   LucideCirclePlus,
-  LucideFlaskConical,
-  LucideBookOpen,
   LucideSparkles,
   LucideDatabase,
   LucideFileText,
   LucideArrowRight,
   LucideUpload,
   LucideMessageCircle,
-  LucideTrendingUp,
+  LucideLoader,
 } from '@lucide/angular';
 import type { LucideIconInput } from '@lucide/angular';
+import { CollectionsService } from '../core/services/collections.service';
+import type { Collection } from '../core/models/collection.model';
 
 interface StatCard {
   label: string;
   value: string;
   suffix: string;
   suffixClass: string;
-}
-
-interface CollectionCard {
-  title: string;
-  description: string;
-  icon: LucideIconInput;
-  documents: number;
-  updatedAt: string;
-  featured: boolean;
-  status?: string;
 }
 
 interface ActivityItem {
@@ -42,59 +33,29 @@ interface ActivityItem {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [LucideDynamicIcon],
+  imports: [LucideDynamicIcon, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Dashboard {
+export class Dashboard implements OnInit {
+  private readonly collectionsService = inject(CollectionsService);
+  private readonly router = inject(Router);
+
   protected readonly LucideCirclePlus = LucideCirclePlus;
   protected readonly LucideFileText = LucideFileText;
   protected readonly LucideArrowRight = LucideArrowRight;
-  protected readonly LucideTrendingUp = LucideTrendingUp;
   protected readonly LucideDatabase = LucideDatabase;
+  protected readonly LucideLoader = LucideLoader;
 
   protected readonly stats = signal<StatCard[]>([
     { label: 'Total Documents', value: '1,248', suffix: '+12%', suffixClass: 'text-tertiary-fixed-dim font-bold text-sm' },
-    { label: 'Total Collections', value: '14', suffix: 'Active', suffixClass: 'text-on-surface-variant text-sm' },
+    { label: 'Total Collections', value: '—', suffix: 'Active', suffixClass: 'text-on-surface-variant text-sm' },
     { label: 'Models Configured', value: '3', suffix: 'OPTIMIZED', suffixClass: 'bg-tertiary-fixed-dim/20 text-on-tertiary-fixed px-2 py-0.5 rounded-full text-[10px] font-bold' },
   ]);
 
-  protected readonly collections = signal<CollectionCard[]>([
-    {
-      title: 'Investigación Cuántica 2024',
-      description: 'Análisis detallado de papers sobre computación cuántica y entrelazamiento de datos a gran escala.',
-      icon: LucideFlaskConical,
-      documents: 42,
-      updatedAt: 'Actualizado ayer',
-      featured: false,
-    },
-    {
-      title: 'Manuscritos de Filosofía',
-      description: 'Colección privada de textos filosóficos del siglo XVII con anotaciones automáticas de IA.',
-      icon: LucideBookOpen,
-      documents: 128,
-      updatedAt: 'Hace 3 horas',
-      featured: false,
-    },
-    {
-      title: 'Prompt Engineering Masterclass',
-      description: 'Repositorio de técnicas y mejores prácticas para el desarrollo de agentes inteligentes locales.',
-      icon: LucideSparkles,
-      documents: 15,
-      updatedAt: 'Hace 1 semana',
-      featured: false,
-    },
-    {
-      title: 'Global Market Data',
-      description: 'Análisis en tiempo real de tendencias de mercado procesadas por Llama 3.',
-      icon: LucideDatabase,
-      documents: 856,
-      updatedAt: '',
-      featured: true,
-      status: 'Live Syncing',
-    },
-  ]);
+  protected readonly collections = signal<Collection[]>([]);
+  protected readonly loading = signal(true);
 
   protected readonly activities = signal<ActivityItem[]>([
     {
@@ -126,4 +87,29 @@ export class Dashboard {
   protected readonly memoryUsed = signal(12.4);
   protected readonly memoryTotal = signal(16);
   protected readonly memoryPercent = signal(75);
+
+  ngOnInit(): void {
+    this.collectionsService.getCollections().subscribe({
+      next: (data) => {
+        this.collections.set(data);
+        this.stats.update((s) =>
+          s.map((stat) =>
+            stat.label === 'Total Collections'
+              ? { ...stat, value: String(data.length) }
+              : stat
+          )
+        );
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
+    });
+  }
+
+  protected openCollection(id: number): void {
+    this.router.navigate(['/collections', id]);
+  }
+
+  protected formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 }
