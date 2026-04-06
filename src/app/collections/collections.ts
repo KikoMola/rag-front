@@ -43,7 +43,6 @@ export class Collections implements OnInit {
 
     collections = signal<Collection[]>([]);
     loading = signal(true);
-    showCreateForm = signal(false);
     creating = signal(false);
     deleting = signal<number | null>(null);
     pendingDeleteCollectionId = signal<number | null>(null);
@@ -76,21 +75,16 @@ export class Collections implements OnInit {
 
     openCreateForm(): void {
         this.createForm.reset();
-        this.showCreateForm.set(true);
     }
 
-    cancelCreate(): void {
-        this.showCreateForm.set(false);
-    }
-
-    submitCreate(): void {
+    submitCreate(close: () => void): void {
         if (this.createForm.invalid) return;
         this.creating.set(true);
         const { name, description } = this.createForm.getRawValue();
         this.collectionsService.createCollection({ name, description: description || null }).subscribe({
             next: (collection) => {
                 this.creating.set(false);
-                this.showCreateForm.set(false);
+                close();
                 this.collections.update((list) => [collection, ...list]);
             },
             error: () => this.creating.set(false),
