@@ -6,7 +6,6 @@ import {
     LucideDatabase,
     LucideFileText,
     LucideArrowRight,
-    LucideLoader,
     LucideCheckCircle2,
     LucideAlertCircle,
     LucideClock,
@@ -30,7 +29,6 @@ export class Dashboard implements OnInit {
     protected readonly LucideFileText = LucideFileText;
     protected readonly LucideArrowRight = LucideArrowRight;
     protected readonly LucideDatabase = LucideDatabase;
-    protected readonly LucideLoader = LucideLoader;
     protected readonly LucideCheckCircle2 = LucideCheckCircle2;
     protected readonly LucideAlertCircle = LucideAlertCircle;
     protected readonly LucideClock = LucideClock;
