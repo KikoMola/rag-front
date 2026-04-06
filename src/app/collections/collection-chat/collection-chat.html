@@ -9,25 +9,10 @@
     </div>
 } @else {
     <section class="flex flex-col h-full overflow-hidden">
-        <!-- Model Info Bar -->
-        <div class="px-8 py-2 bg-surface-container-highest/50 backdrop-blur-md flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <a
-                    [routerLink]="['/collections', collectionId()]"
-                    class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors"
-                    aria-label="Volver a la colección"
-                >
-                    <svg [lucideIcon]="LucideArrowLeft" class="size-4"></svg>
-                </a>
-                <div class="flex items-center gap-2">
-                    <svg [lucideIcon]="LucideBot" class="size-4 text-primary"></svg>
-                    <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">
-                        RAG Chat — <span class="text-primary-container">{{ collection()!.name }}</span>
-                    </span>
-                </div>
-            </div>
+        <!-- Header -->
+        <div class="px-8 mt-8">
             <nav
-                class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant"
+                class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2"
             >
                 <a routerLink="/collections" class="hover:text-primary transition-colors">Collections</a>
                 <svg [lucideIcon]="LucideChevronRight" class="size-3"></svg>
