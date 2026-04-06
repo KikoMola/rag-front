@@ -7,7 +7,6 @@ import { Navbar } from './navbar/navbar';
     selector: 'app-layout',
     imports: [RouterOutlet, Sidebar, Navbar],
     templateUrl: './layout.html',
-    styleUrl: './layout.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Layout {}
