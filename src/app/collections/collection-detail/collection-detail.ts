@@ -17,6 +17,13 @@ import {
     LucideCheckCircle2,
 } from '@lucide/angular';
 import type { LucideIconInput } from '@lucide/angular';
+import {
+    NgpDialog,
+    NgpDialogDescription,
+    NgpDialogOverlay,
+    NgpDialogTitle,
+    NgpDialogTrigger,
+} from 'ng-primitives/dialog';
 import { CollectionsService } from '../../core/services/collections.service';
 import type { Collection, CollectionDocument, DocumentStatus } from '../../core/models/collection.model';
 
@@ -31,7 +38,7 @@ const FORMAT_ICONS: Record<string, LucideIconInput> = {
 
 @Component({
     selector: 'app-collection-detail',
-    imports: [RouterLink, DecimalPipe, LucideDynamicIcon],
+    imports: [RouterLink, DecimalPipe, LucideDynamicIcon, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription],
     templateUrl: './collection-detail.html',
     styleUrl: './collection-detail.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,8 +66,13 @@ export class CollectionDetail implements OnInit {
     uploading = signal(false);
     deletingDoc = signal<number | null>(null);
     dragging = signal(false);
+    pendingDeleteDocId = signal<number | null>(null);
 
     readonly dropZoneInput = viewChild<ElementRef<HTMLInputElement>>('dropZoneInput');
+
+    pendingDeleteDoc = computed(() =>
+        this.documents().find((d) => d.id === this.pendingDeleteDocId()),
+    );
 
     openFilePicker(): void {
         this.dropZoneInput()?.nativeElement.click();
@@ -157,6 +169,29 @@ export class CollectionDetail implements OnInit {
                 this.pollProcessingDocs();
             },
             error: () => this.uploading.set(false),
+        });
+    }
+
+    requestDeleteDocument(event: Event, docId: number): void {
+        event.stopPropagation();
+        this.pendingDeleteDocId.set(docId);
+    }
+
+    confirmDeleteDocument(close: () => void): void {
+        const docId = this.pendingDeleteDocId();
+        if (!docId) return;
+        close();
+        this.deletingDoc.set(docId);
+        this.collectionsService.deleteDocument(this.collectionId(), docId).subscribe({
+            next: () => {
+                this.documents.update((list) => list.filter((d) => d.id !== docId));
+                this.deletingDoc.set(null);
+                this.pendingDeleteDocId.set(null);
+            },
+            error: () => {
+                this.deletingDoc.set(null);
+                this.pendingDeleteDocId.set(null);
+            },
         });
     }
 

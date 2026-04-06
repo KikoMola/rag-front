@@ -183,7 +183,8 @@
                                                     class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     <button
-                                                        (click)="deleteDocument($event, doc.id)"
+                                                        (click)="requestDeleteDocument($event, doc.id)"
+                                                        [ngpDialogTrigger]="confirmDeleteDocDialog"
                                                         [disabled]="deletingDoc() === doc.id"
                                                         class="p-1.5 text-on-surface-variant hover:text-error transition-colors cursor-pointer"
                                                         aria-label="Eliminar documento"
@@ -254,3 +255,30 @@
         </div>
     }
 </div>
+<ng-template #confirmDeleteDocDialog let-close="close">
+    <div ngpDialogOverlay class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+        <div ngpDialog class="bg-surface-container-lowest rounded-2xl p-8 shadow-2xl w-full max-w-md mx-4">
+            <h2 ngpDialogTitle class="text-lg font-bold font-headline text-on-surface mb-2">Eliminar documento</h2>
+            <p ngpDialogDescription class="text-sm text-on-surface-variant mb-6">
+                ¿Seguro que quieres eliminar
+                <span class="font-semibold text-on-surface">{{ pendingDeleteDoc()?.filename }}</span>?
+                Se eliminarán también sus chunks indexados. Esta acción es irreversible.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button
+                    (click)="close()"
+                    class="px-5 py-2.5 text-on-surface-variant font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
+                >
+                    Cancelar
+                </button>
+                <button
+                    (click)="confirmDeleteDocument(close)"
+                    class="px-5 py-2.5 bg-error text-on-error font-bold text-xs uppercase tracking-widest rounded-lg hover:opacity-90 transition-all cursor-pointer flex items-center gap-2"
+                >
+                    <svg [lucideIcon]="LucideTrash2" class="size-3.5"></svg>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</ng-template>
