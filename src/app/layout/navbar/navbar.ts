@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { LucideSearch, LucideDynamicIcon } from '@lucide/angular';
+import { SearchService } from '../../core/services/search.service';
 
 @Component({
     selector: 'app-navbar',
@@ -11,5 +12,6 @@ import { LucideSearch, LucideDynamicIcon } from '@lucide/angular';
 export class Navbar {
     protected readonly LucideSearch = LucideSearch;
 
-    protected readonly searchQuery = signal('');
+    private readonly searchService = inject(SearchService);
+    protected readonly searchQuery = this.searchService.query;
 }

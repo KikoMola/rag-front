@@ -3,8 +3,16 @@
     <div class="flex items-center justify-between mb-8">
         <div>
             <h2 class="text-4xl font-extrabold tracking-tight font-headline text-on-surface">Colecciones</h2>
-            <p class="text-on-surface-variant mt-1">
-                {{ collections().length }} colecciones • {{ totalDocuments() }} documentos totales
+            <p class="text-on-surface-variant mt-1 flex items-center gap-2">
+                @if (hasSearch()) {
+                    {{ displayedCollections().length }} resultado(s) para
+                    <span class="font-semibold text-on-surface">"{{ searchQuery() }}"</span>
+                    @if (searching()) {
+                        <svg [lucideIcon]="LucideLoader" class="size-3.5 animate-spin"></svg>
+                    }
+                } @else {
+                    {{ collections().length }} colecciones • {{ totalDocuments() }} documentos totales
+                }
             </p>
         </div>
         <button
@@ -22,8 +30,20 @@
         <div class="flex items-center justify-center py-24">
             <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin"></svg>
         </div>
-    } @else if (collections().length === 0) {
-        <!-- Empty State -->
+    } @else if (displayedCollections().length === 0) {
+        @if (hasSearch()) {
+            <!-- No Results State -->
+            <div class="flex flex-col items-center justify-center py-24 text-center">
+                <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
+                    <svg [lucideIcon]="LucideSearch" class="size-10 text-on-surface-variant"></svg>
+                </div>
+                <h3 class="text-xl font-bold font-headline text-on-surface mb-2">Sin resultados</h3>
+                <p class="text-on-surface-variant max-w-md">
+                    No se encontraron colecciones para
+                    <span class="font-semibold text-on-surface">"{{ searchQuery() }}"</span>.
+                </p>
+            </div>
+        } @else {
         <div class="flex flex-col items-center justify-center py-24 text-center">
             <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
                 <svg [lucideIcon]="LucideFolderOpen" class="size-10 text-on-surface-variant"></svg>
@@ -42,10 +62,11 @@
                 Crear Primera Colección
             </button>
         </div>
+        }
     } @else {
         <!-- Collection Grid -->
         <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            @for (collection of collections(); track collection.id) {
+            @for (collection of displayedCollections(); track collection.id) {
                 <article
                     (click)="openCollection(collection.id)"
                     (keydown.enter)="openCollection(collection.id)"
