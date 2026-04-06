@@ -9,25 +9,10 @@
     </div>
 } @else {
     <section class="flex flex-col h-full overflow-hidden">
-        <!-- Model Info Bar -->
-        <div class="px-8 py-2 bg-surface-container-highest/50 backdrop-blur-md flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <a
-                    [routerLink]="['/collections', collectionId()]"
-                    class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors"
-                    aria-label="Volver a la colección"
-                >
-                    <svg [lucideIcon]="LucideArrowLeft" class="size-4"></svg>
-                </a>
-                <div class="flex items-center gap-2">
-                    <svg [lucideIcon]="LucideBot" class="size-4 text-primary"></svg>
-                    <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">
-                        RAG Chat — <span class="text-primary-container">{{ collection()!.name }}</span>
-                    </span>
-                </div>
-            </div>
+        <!-- Header -->
+        <div class="px-8 mt-8">
             <nav
-                class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant"
+                class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2"
             >
                 <a routerLink="/collections" class="hover:text-primary transition-colors">Collections</a>
                 <svg [lucideIcon]="LucideChevronRight" class="size-3"></svg>
@@ -40,7 +25,7 @@
         </div>
 
         <!-- Chat Messages Area -->
-        <div #messagesContainer class="flex-1 overflow-y-auto px-8 lg:px-12 py-8">
+        <div #messagesContainer class="flex-1 overflow-y-auto [scrollbar-gutter:stable] px-8 lg:px-12 py-8">
             @if (!hasMessages()) {
                 <!-- Empty State -->
                 <div class="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto">
@@ -174,7 +159,7 @@
                 >
                     <div class="flex items-end gap-2 p-1">
                         <textarea
-                            class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-3 px-3 resize-none max-h-48 font-body"
+                            class="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm py-3 px-3 resize-none max-h-48 font-body"
                             placeholder="Pregunta sobre los documentos de esta colección..."
                             rows="1"
                             [value]="inputValue()"

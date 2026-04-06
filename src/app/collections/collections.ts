@@ -11,12 +11,19 @@ import {
     LucideX,
     LucideLoader,
 } from '@lucide/angular';
+import {
+    NgpDialog,
+    NgpDialogDescription,
+    NgpDialogOverlay,
+    NgpDialogTitle,
+    NgpDialogTrigger,
+} from 'ng-primitives/dialog';
 import { CollectionsService } from '../core/services/collections.service';
 import type { Collection } from '../core/models/collection.model';
 
 @Component({
     selector: 'app-collections',
-    imports: [ReactiveFormsModule, LucideDynamicIcon],
+    imports: [ReactiveFormsModule, LucideDynamicIcon, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription],
     templateUrl: './collections.html',
     styleUrl: './collections.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,9 +43,13 @@ export class Collections implements OnInit {
 
     collections = signal<Collection[]>([]);
     loading = signal(true);
-    showCreateForm = signal(false);
     creating = signal(false);
     deleting = signal<number | null>(null);
+    pendingDeleteCollectionId = signal<number | null>(null);
+
+    pendingDeleteCollection = computed(() =>
+        this.collections().find((c) => c.id === this.pendingDeleteCollectionId()),
+    );
 
     totalDocuments = computed(() => this.collections().reduce((sum, c) => sum + c.document_count, 0));
 
@@ -64,24 +75,42 @@ export class Collections implements OnInit {
 
     openCreateForm(): void {
         this.createForm.reset();
-        this.showCreateForm.set(true);
     }
 
-    cancelCreate(): void {
-        this.showCreateForm.set(false);
-    }
-
-    submitCreate(): void {
+    submitCreate(close: () => void): void {
         if (this.createForm.invalid) return;
         this.creating.set(true);
         const { name, description } = this.createForm.getRawValue();
         this.collectionsService.createCollection({ name, description: description || null }).subscribe({
             next: (collection) => {
                 this.creating.set(false);
-                this.showCreateForm.set(false);
+                close();
                 this.collections.update((list) => [collection, ...list]);
             },
             error: () => this.creating.set(false),
+        });
+    }
+
+    requestDeleteCollection(event: Event, id: number): void {
+        event.stopPropagation();
+        this.pendingDeleteCollectionId.set(id);
+    }
+
+    confirmDeleteCollection(close: () => void): void {
+        const id = this.pendingDeleteCollectionId();
+        if (!id) return;
+        close();
+        this.deleting.set(id);
+        this.collectionsService.deleteCollection(id).subscribe({
+            next: () => {
+                this.collections.update((list) => list.filter((c) => c.id !== id));
+                this.deleting.set(null);
+                this.pendingDeleteCollectionId.set(null);
+            },
+            error: () => {
+                this.deleting.set(null);
+                this.pendingDeleteCollectionId.set(null);
+            },
         });
     }
 

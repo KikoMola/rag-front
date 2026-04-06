@@ -60,25 +60,47 @@
                     (dragover)="onDragOver($event)"
                     (dragleave)="onDragLeave()"
                     (drop)="onDrop($event)"
-                    class="relative group bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all"
-                    [class.bg-primary/5]="dragging()"
-                    [class.border-primary/60]="dragging()"
+                    (click)="openFilePicker()"
+                    class="relative group bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer"
+                    [class.bg-primary/10]="dragging()"
+                    [class.border-primary]="dragging()"
+                    [class.scale-[1.01]]="dragging()"
+                    [class.shadow-lg]="dragging()"
+                    [class.hover:bg-surface-container]="!dragging()"
                     [class.border-outline-variant/30]="!dragging()"
                     style="border: 2px dashed"
                 >
+                    <!-- Hidden file input for click-to-upload -->
+                    <input
+                        #dropZoneInput
+                        type="file"
+                        multiple
+                        accept=".pdf,.docx,.epub,.html,.htm,.txt,.md"
+                        class="hidden"
+                        (change)="onFileSelect($event)"
+                    />
                     @if (uploading()) {
                         <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin mb-4"></svg>
                         <h3 class="font-headline font-bold text-on-surface">Subiendo archivos...</h3>
-                    } @else {
+                    } @else if (dragging()) {
                         <div
-                            class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm"
+                            class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4"
                         >
                             <svg [lucideIcon]="LucideCloudUpload" class="size-8 text-primary"></svg>
                         </div>
-                        <h3 class="font-headline font-bold text-on-surface">Arrastra archivos aquí</h3>
+                        <h3 class="font-headline font-bold text-primary">Suelta los archivos aquí</h3>
+                        <p class="text-sm text-primary/70 max-w-xs mt-1">Listos para subir</p>
+                    } @else {
+                        <div
+                            class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm group-hover:bg-primary/5 group-hover:shadow-md transition-all duration-200"
+                        >
+                            <svg [lucideIcon]="LucideCloudUpload" class="size-8 text-primary group-hover:scale-110 transition-transform duration-200"></svg>
+                        </div>
+                        <h3 class="font-headline font-bold text-on-surface group-hover:text-primary transition-colors duration-200">Arrastra archivos aquí</h3>
                         <p class="text-sm text-on-surface-variant max-w-xs mt-1">
-                            Soporta PDF, DOCX, EPUB, HTML, TXT y Markdown.
+                            o <span class="text-primary font-semibold">haz clic para seleccionar</span>
                         </p>
+                        <p class="text-xs text-on-surface-variant/60 mt-2">Soporta PDF, DOCX, EPUB, HTML, TXT y Markdown.</p>
                     }
                 </div>
 
@@ -161,7 +183,8 @@
                                                     class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     <button
-                                                        (click)="deleteDocument($event, doc.id)"
+                                                        (click)="requestDeleteDocument($event, doc.id)"
+                                                        [ngpDialogTrigger]="confirmDeleteDocDialog"
                                                         [disabled]="deletingDoc() === doc.id"
                                                         class="p-1.5 text-on-surface-variant hover:text-error transition-colors cursor-pointer"
                                                         aria-label="Eliminar documento"
@@ -232,3 +255,30 @@
         </div>
     }
 </div>
+<ng-template #confirmDeleteDocDialog let-close="close">
+    <div ngpDialogOverlay class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+        <div ngpDialog class="bg-surface-container-lowest rounded-2xl p-8 shadow-2xl w-full max-w-md mx-4">
+            <h2 ngpDialogTitle class="text-lg font-bold font-headline text-on-surface mb-2">Eliminar documento</h2>
+            <p ngpDialogDescription class="text-sm text-on-surface-variant mb-6">
+                ¿Seguro que quieres eliminar
+                <span class="font-semibold text-on-surface">{{ pendingDeleteDoc()?.filename }}</span>?
+                Se eliminarán también sus chunks indexados. Esta acción es irreversible.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button
+                    (click)="close()"
+                    class="px-5 py-2.5 text-on-surface-variant font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
+                >
+                    Cancelar
+                </button>
+                <button
+                    (click)="confirmDeleteDocument(close)"
+                    class="px-5 py-2.5 bg-error text-on-error font-bold text-xs uppercase tracking-widest rounded-lg hover:opacity-90 transition-all cursor-pointer flex items-center gap-2"
+                >
+                    <svg [lucideIcon]="LucideTrash2" class="size-3.5"></svg>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</ng-template>

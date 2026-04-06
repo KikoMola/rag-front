@@ -1,9 +1,9 @@
 import {
-    AfterViewChecked,
     ChangeDetectionStrategy,
     Component,
     ElementRef,
     computed,
+    effect,
     inject,
     OnDestroy,
     OnInit,
@@ -43,8 +43,9 @@ interface ChatMessage {
     templateUrl: './collection-chat.html',
     styleUrl: './collection-chat.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'flex flex-col h-full' },
 })
-export class CollectionChat implements OnInit, OnDestroy, AfterViewChecked {
+export class CollectionChat implements OnInit, OnDestroy {
     protected readonly LucideArrowUp = LucideArrowUp;
     protected readonly LucideBot = LucideBot;
     protected readonly LucideChevronRight = LucideChevronRight;
@@ -61,9 +62,17 @@ export class CollectionChat implements OnInit, OnDestroy, AfterViewChecked {
     private readonly ragChatService = inject(RagChatService);
 
     private streamSub: Subscription | null = null;
-    private shouldScrollToBottom = false;
 
     readonly messagesContainer = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
+
+    constructor() {
+        effect(() => {
+            const msgs = this.messages();
+            if (msgs.length > 0) {
+                queueMicrotask(() => this.scrollToBottom());
+            }
+        });
+    }
 
     collectionId = signal(0);
     collection = signal<Collection | null>(null);
@@ -94,13 +103,6 @@ export class CollectionChat implements OnInit, OnDestroy, AfterViewChecked {
         });
     }
 
-    ngAfterViewChecked(): void {
-        if (this.shouldScrollToBottom) {
-            this.scrollToBottom();
-            this.shouldScrollToBottom = false;
-        }
-    }
-
     ngOnDestroy(): void {
         this.streamSub?.unsubscribe();
     }
@@ -126,7 +128,6 @@ export class CollectionChat implements OnInit, OnDestroy, AfterViewChecked {
         this.messages.update((msgs) => [...msgs, userMsg, assistantMsg]);
         this.inputValue.set('');
         this.streaming.set(true);
-        this.shouldScrollToBottom = true;
 
         let fullResponse = '';
         let thinkingContent = '';
@@ -136,13 +137,11 @@ export class CollectionChat implements OnInit, OnDestroy, AfterViewChecked {
                 if (event.type === 'thinking' && event.token) {
                     thinkingContent += event.token;
                     this.updateLastMessage(fullResponse, thinkingContent);
-                    this.shouldScrollToBottom = true;
                 }
 
                 if (event.type === 'token' && event.token) {
                     fullResponse += event.token;
                     this.updateLastMessage(fullResponse, thinkingContent);
-                    this.shouldScrollToBottom = true;
                 }
 
                 if (event.type === 'done') {
