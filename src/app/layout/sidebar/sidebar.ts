@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import type { LucideIconInput } from '@lucide/angular';
 import {
-    LucideActivity,
     LucideBrain,
     LucideCirclePlus,
     LucideDynamicIcon,
@@ -24,7 +23,6 @@ interface NavItem {
 export class Sidebar {
     protected readonly LucideBrain = LucideBrain;
     protected readonly LucideCirclePlus = LucideCirclePlus;
-    protected readonly LucideActivity = LucideActivity;
 
     protected readonly navItems = signal<NavItem[]>([
         { label: 'Dashboard', icon: LucideBrain, route: '/' },
