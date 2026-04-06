@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
     LucideDynamicIcon,
@@ -59,6 +59,12 @@ export class CollectionDetail implements OnInit {
     uploading = signal(false);
     deletingDoc = signal<number | null>(null);
     dragging = signal(false);
+
+    readonly dropZoneInput = viewChild<ElementRef<HTMLInputElement>>('dropZoneInput');
+
+    openFilePicker(): void {
+        this.dropZoneInput()?.nativeElement.click();
+    }
 
     totalSize = computed(() => {
         const bytes = this.documents().reduce((sum, d) => sum + d.size_bytes, 0);

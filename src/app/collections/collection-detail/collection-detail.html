@@ -60,25 +60,47 @@
                     (dragover)="onDragOver($event)"
                     (dragleave)="onDragLeave()"
                     (drop)="onDrop($event)"
-                    class="relative group bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all"
-                    [class.bg-primary/5]="dragging()"
-                    [class.border-primary/60]="dragging()"
+                    (click)="openFilePicker()"
+                    class="relative group bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer"
+                    [class.bg-primary/10]="dragging()"
+                    [class.border-primary]="dragging()"
+                    [class.scale-[1.01]]="dragging()"
+                    [class.shadow-lg]="dragging()"
+                    [class.hover:bg-surface-container]="!dragging()"
                     [class.border-outline-variant/30]="!dragging()"
                     style="border: 2px dashed"
                 >
+                    <!-- Hidden file input for click-to-upload -->
+                    <input
+                        #dropZoneInput
+                        type="file"
+                        multiple
+                        accept=".pdf,.docx,.epub,.html,.htm,.txt,.md"
+                        class="hidden"
+                        (change)="onFileSelect($event)"
+                    />
                     @if (uploading()) {
                         <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin mb-4"></svg>
                         <h3 class="font-headline font-bold text-on-surface">Subiendo archivos...</h3>
-                    } @else {
+                    } @else if (dragging()) {
                         <div
-                            class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm"
+                            class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4"
                         >
                             <svg [lucideIcon]="LucideCloudUpload" class="size-8 text-primary"></svg>
                         </div>
-                        <h3 class="font-headline font-bold text-on-surface">Arrastra archivos aquí</h3>
+                        <h3 class="font-headline font-bold text-primary">Suelta los archivos aquí</h3>
+                        <p class="text-sm text-primary/70 max-w-xs mt-1">Listos para subir</p>
+                    } @else {
+                        <div
+                            class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm group-hover:bg-primary/5 group-hover:shadow-md transition-all duration-200"
+                        >
+                            <svg [lucideIcon]="LucideCloudUpload" class="size-8 text-primary group-hover:scale-110 transition-transform duration-200"></svg>
+                        </div>
+                        <h3 class="font-headline font-bold text-on-surface group-hover:text-primary transition-colors duration-200">Arrastra archivos aquí</h3>
                         <p class="text-sm text-on-surface-variant max-w-xs mt-1">
-                            Soporta PDF, DOCX, EPUB, HTML, TXT y Markdown.
+                            o <span class="text-primary font-semibold">haz clic para seleccionar</span>
                         </p>
+                        <p class="text-xs text-on-surface-variant/60 mt-2">Soporta PDF, DOCX, EPUB, HTML, TXT y Markdown.</p>
                     }
                 </div>
 
