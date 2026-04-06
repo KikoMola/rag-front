@@ -43,6 +43,7 @@ interface ChatMessage {
     templateUrl: './collection-chat.html',
     styleUrl: './collection-chat.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'flex flex-col h-full' },
 })
 export class CollectionChat implements OnInit, OnDestroy, AfterViewChecked {
     protected readonly LucideArrowUp = LucideArrowUp;
