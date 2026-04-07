@@ -24,6 +24,7 @@ import {
     NgpDialogTitle,
     NgpDialogTrigger,
 } from 'ng-primitives/dialog';
+import { EMPTY, switchMap, catchError } from 'rxjs';
 import { CollectionsService } from '../../core/services/collections.service';
 import type { Collection, CollectionDocument, DocumentStatus } from '../../core/models/collection.model';
 
@@ -99,24 +100,24 @@ export class CollectionDetail implements OnInit {
 
     loadData(): void {
         this.loading.set(true);
-        this.collectionsService.getCollections().subscribe({
-            next: (collections) => {
+        this.collectionsService.getCollections().pipe(
+            switchMap((collections) => {
                 const match = collections.find((c) => c.id === this.collectionId());
                 this.collection.set(match ?? null);
                 if (!match) {
                     this.loading.set(false);
-                    return;
+                    return EMPTY;
                 }
-                this.collectionsService.getDocuments(this.collectionId()).subscribe({
-                    next: (docs) => {
-                        this.documents.set(docs);
-                        this.loading.set(false);
-                        this.pollProcessingDocs();
-                    },
-                    error: () => this.loading.set(false),
-                });
-            },
-            error: () => this.loading.set(false),
+                return this.collectionsService.getDocuments(this.collectionId());
+            }),
+            catchError(() => {
+                this.loading.set(false);
+                return EMPTY;
+            }),
+        ).subscribe((docs) => {
+            this.documents.set(docs);
+            this.loading.set(false);
+            this.pollProcessingDocs();
         });
     }
 
