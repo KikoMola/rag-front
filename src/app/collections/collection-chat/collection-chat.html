@@ -78,49 +78,55 @@
                             <div class="flex flex-col items-start">
                                 <!-- Thinking Block -->
                                 @if (msg.thinking) {
-                                    <div class="mb-3 w-full max-w-5xl">
-                                        <button
-                                            (click)="toggleThinking($index)"
-                                            class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors cursor-pointer group"
-                                        >
-                                            <div
-                                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-low group-hover:bg-surface-container transition-colors"
+                                    <div class="mb-4 w-full max-w-5xl">
+                                        <div class="inline-flex flex-col max-w-full">
+                                            <!-- Tab/Pill Button -->
+                                            <button
+                                                (click)="toggleThinking($index)"
+                                                class="self-start flex items-center gap-2 px-4 py-2 bg-tertiary-fixed-dim/[0.08] hover:bg-tertiary-fixed-dim/[0.15] transition-colors cursor-pointer rounded-t-2xl group relative z-10"
+                                                [class.rounded-b-2xl]="!isThinkingExpanded($index) && !(msg.streaming && !msg.content)"
                                             >
                                                 <svg
                                                     [lucideIcon]="LucideBrain"
-                                                    class="size-3.5 text-tertiary-fixed-dim"
+                                                    class="size-4 text-tertiary-fixed-dim"
                                                 ></svg>
-                                                @if (msg.streaming && !msg.content) {
-                                                    <span class="text-tertiary-fixed-dim">Pensando...</span>
-                                                    <svg
-                                                        [lucideIcon]="LucideLoader"
-                                                        class="size-3 animate-spin text-tertiary-fixed-dim"
-                                                    ></svg>
-                                                } @else {
-                                                    <span>Razonamiento</span>
-                                                    <svg
-                                                        [lucideIcon]="LucideChevronDown"
-                                                        class="size-3 transition-transform"
-                                                        [class.rotate-180]="isThinkingExpanded($index)"
-                                                    ></svg>
-                                                }
-                                            </div>
-                                        </button>
-                                        @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
-                                            <div
-                                                class="mt-2 px-4 py-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant leading-relaxed border-l-2 border-tertiary-fixed-dim/40"
-                                            >
+                                                <span class="text-[11px] font-bold uppercase tracking-widest text-tertiary-fixed-dim">
+                                                    @if (msg.streaming && !msg.content) {
+                                                        Analizando...
+                                                    } @else {
+                                                        Razonamiento
+                                                    }
+                                                </span>
+                                                <div class="text-tertiary-fixed-dim/70 group-hover:text-tertiary-fixed-dim transition-colors ml-2">
+                                                    @if (msg.streaming && !msg.content) {
+                                                        <svg [lucideIcon]="LucideLoader" class="size-3.5 animate-spin"></svg>
+                                                    } @else {
+                                                        <svg
+                                                            [lucideIcon]="LucideChevronDown"
+                                                            class="size-3.5 transition-transform duration-300"
+                                                            [class.rotate-180]="isThinkingExpanded($index)"
+                                                        ></svg>
+                                                    }
+                                                </div>
+                                            </button>
+
+                                            <!-- Content Box -->
+                                            @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
                                                 <div
-                                                    class="prose prose-thinking"
-                                                    [innerHTML]="msg.thinking | markdown"
-                                                ></div>
-                                                @if (msg.streaming && !msg.content) {
-                                                    <span
-                                                        class="inline-block w-1.5 h-4 bg-tertiary-fixed-dim/60 animate-pulse ml-0.5 align-middle"
-                                                    ></span>
-                                                }
-                                            </div>
-                                        }
+                                                    class="bg-tertiary-fixed-dim/[0.04] rounded-b-2xl rounded-tr-2xl p-6 text-sm text-on-surface-variant/90 leading-relaxed max-w-full"
+                                                >
+                                                    <div
+                                                        class="prose prose-thinking max-w-none text-on-surface-variant"
+                                                        [innerHTML]="msg.thinking | markdown"
+                                                    ></div>
+                                                    @if (msg.streaming && !msg.content) {
+                                                        <span
+                                                            class="inline-block w-1.5 h-4 bg-tertiary-fixed-dim/60 animate-pulse ml-1 align-middle"
+                                                        ></span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
                                     </div>
                                 }
 
