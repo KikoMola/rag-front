@@ -83,7 +83,7 @@
                                             <!-- Tab/Pill Button -->
                                             <button
                                                 (click)="toggleThinking($index)"
-                                                class="self-start flex items-center gap-2 px-4 py-2 bg-tertiary-fixed-dim/[0.08] hover:bg-tertiary-fixed-dim/[0.15] transition-colors cursor-pointer rounded-t-2xl group relative z-10"
+                                                class="self-start flex items-center gap-2 px-4 py-2 bg-tertiary-fixed-dim/8 hover:bg-tertiary-fixed-dim/15 transition-colors cursor-pointer rounded-t-2xl group relative z-10"
                                                 [class.rounded-b-2xl]="!isThinkingExpanded($index) && !(msg.streaming && !msg.content)"
                                             >
                                                 <svg
@@ -113,7 +113,7 @@
                                             <!-- Content Box -->
                                             @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
                                                 <div
-                                                    class="bg-tertiary-fixed-dim/[0.04] rounded-b-2xl rounded-tr-2xl p-6 text-sm text-on-surface-variant/90 leading-relaxed max-w-full"
+                                                    class="bg-tertiary-fixed-dim/4 rounded-b-2xl rounded-tr-2xl p-6 text-sm text-on-surface-variant/90 leading-relaxed max-w-full"
                                                 >
                                                     <div
                                                         class="prose prose-thinking max-w-none text-on-surface-variant"
