@@ -141,4 +141,56 @@ describe('RagChatService', () => {
         const body = JSON.parse((fetchSpy.mock.calls[0]?.[1] as RequestInit)?.body as string);
         expect(body.top_k).toBe(5);
     });
+
+    it('should emit error when fetch rejects with non-abort error', async () => {
+        fetchSpy.mockRejectedValue(new TypeError('Network error'));
+
+        await expect(
+            new Promise<void>((resolve, reject) => {
+                service.queryCollection(1, 'test').subscribe({
+                    complete: () => resolve(),
+                    error: reject,
+                });
+            }),
+        ).rejects.toThrow('Network error');
+    });
+
+    it('should emit error when stream read fails', async () => {
+        const errorStream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                controller.error(new Error('Stream read failure'));
+            },
+        });
+
+        fetchSpy.mockResolvedValue(new Response(errorStream, { status: 200 }));
+
+        await expect(
+            new Promise<void>((resolve, reject) => {
+                service.queryCollection(1, 'test').subscribe({
+                    complete: () => resolve(),
+                    error: reject,
+                });
+            }),
+        ).rejects.toThrow('Stream read failure');
+    });
+
+    it('should not emit error on AbortError during fetch', async () => {
+        const abortError = new DOMException('The operation was aborted', 'AbortError');
+        fetchSpy.mockRejectedValue(abortError);
+
+        const errors: unknown[] = [];
+        const events: RagStreamEvent[] = [];
+
+        await new Promise<void>((resolve) => {
+            service.queryCollection(1, 'test').subscribe({
+                next: (e) => events.push(e),
+                error: (e) => { errors.push(e); resolve(); },
+                complete: () => resolve(),
+            });
+            // Give time for the rejection to propagate
+            setTimeout(resolve, 100);
+        });
+
+        expect(errors).toHaveLength(0);
+    });
 });
