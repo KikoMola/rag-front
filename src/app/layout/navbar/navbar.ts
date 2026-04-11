@@ -9,7 +9,6 @@ import { SearchService } from '../../core/services/search.service';
     selector: 'app-navbar',
     imports: [LucideDynamicIcon],
     templateUrl: './navbar.html',
-    styleUrl: './navbar.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Navbar {

@@ -31,7 +31,6 @@ import type { Collection } from '../core/models/collection.model';
     selector: 'app-collections',
     imports: [ReactiveFormsModule, LucideDynamicIcon, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription],
     templateUrl: './collections.html',
-    styleUrl: './collections.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Collections implements OnInit {
