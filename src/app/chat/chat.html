@@ -1,0 +1,133 @@
+<section class="flex flex-col h-full overflow-hidden">
+    <!-- Header -->
+    <div class="px-8 mt-8 mb-2">
+        <h2 class="text-2xl font-black font-headline text-on-surface tracking-tight">Chat General</h2>
+        <p class="text-xs text-on-surface-variant mt-1 font-medium uppercase tracking-widest">
+            Asistente de inteligencia artificial
+        </p>
+    </div>
+
+    <!-- Chat Messages Area -->
+    <div #messagesContainer class="flex-1 overflow-y-auto [scrollbar-gutter:stable] px-8 lg:px-12 py-8">
+        @if (!hasMessages()) {
+            <!-- Empty State -->
+            <div class="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto">
+                <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
+                    <svg [lucideIcon]="LucideSparkles" class="size-10 text-primary"></svg>
+                </div>
+                <h3 class="text-2xl font-bold font-headline text-on-surface mb-3">¿En qué puedo ayudarte?</h3>
+                <p class="text-on-surface-variant text-sm leading-relaxed mb-8">
+                    Hazme cualquier pregunta. Estoy aquí para ayudarte con lo que necesites.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                    <button
+                        (click)="inputValue.set('¿Qué puedes hacer por mí?')"
+                        class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright transition-colors cursor-pointer"
+                    >
+                        <span class="text-primary font-semibold">Capacidades →</span><br />
+                        ¿Qué puedes hacer por mí?
+                    </button>
+                    <button
+                        (click)="inputValue.set('Explícame cómo funciona este sistema')"
+                        class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright transition-colors cursor-pointer"
+                    >
+                        <span class="text-primary font-semibold">Información →</span><br />
+                        ¿Cómo funciona este sistema?
+                    </button>
+                </div>
+            </div>
+        } @else {
+            <!-- Messages -->
+            <div class="space-y-6 max-w-6xl mx-auto">
+                @for (msg of messages(); track $index) {
+                    @if (msg.role === 'user') {
+                        <!-- User Message -->
+                        <div class="flex flex-col items-end">
+                            <div class="bg-primary text-on-primary p-5 rounded-2xl rounded-tr-none max-w-2xl">
+                                <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+                            </div>
+                            <span class="text-[10px] text-on-surface-variant mt-2 font-medium uppercase tracking-wider">
+                                Tú • {{ formatTime(msg.timestamp) }}
+                            </span>
+                        </div>
+                    } @else {
+                        <!-- Assistant Message -->
+                        <div class="flex flex-col items-start">
+                            @if (msg.content) {
+                                <div
+                                    class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none max-w-5xl border border-outline-variant/10"
+                                >
+                                    <div class="prose" [innerHTML]="msg.content | markdown"></div>
+                                    @if (msg.streaming) {
+                                        <span
+                                            class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 align-middle"
+                                        ></span>
+                                    }
+                                </div>
+                            } @else if (msg.streaming) {
+                                <div
+                                    class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none border border-outline-variant/10"
+                                >
+                                    <span
+                                        class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse align-middle"
+                                    ></span>
+                                </div>
+                            }
+                            <span
+                                class="text-[10px] text-primary-container mt-2 font-bold uppercase tracking-widest flex items-center gap-1"
+                            >
+                                <svg [lucideIcon]="LucideSparkles" class="size-3"></svg>
+                                C.O.R.E. • {{ formatTime(msg.timestamp) }}
+                            </span>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="p-6 pb-8 bg-linear-to-t from-surface-container-low via-surface-container-low to-transparent">
+        <div class="max-w-6xl mx-auto relative">
+            <div
+                class="bg-surface-container-lowest rounded-2xl shadow-xl shadow-on-surface/5 p-2 border border-outline-variant/20 focus-within:ring-2 focus-within:ring-primary-container/20 transition-all"
+            >
+                <div class="flex items-end gap-2 p-1">
+                    <textarea
+                        class="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm py-3 px-3 resize-none max-h-48 font-body"
+                        placeholder="Escribe tu mensaje..."
+                        rows="1"
+                        [value]="inputValue()"
+                        (input)="inputValue.set($any($event.target).value)"
+                        (keydown)="onKeydown($event)"
+                    ></textarea>
+                    <div class="flex items-center gap-1">
+                        @if (streaming()) {
+                            <button
+                                (click)="stopStream()"
+                                class="bg-error text-on-error h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all cursor-pointer"
+                                aria-label="Detener generación"
+                            >
+                                <svg [lucideIcon]="LucideSquare" class="size-4"></svg>
+                            </button>
+                        } @else {
+                            <button
+                                (click)="sendMessage()"
+                                [disabled]="!inputValue().trim()"
+                                class="bg-primary text-on-primary h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all disabled:opacity-40 cursor-pointer"
+                                aria-label="Enviar mensaje"
+                            >
+                                <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+            <p
+                class="text-center text-[10px] text-on-surface-variant mt-3 font-medium uppercase tracking-widest opacity-60"
+            >
+                Chat general · Las respuestas son generadas por IA
+            </p>
+        </div>
+    </div>
+</section>
