@@ -1,12 +1,14 @@
 import { inject, Injectable, NgZone } from '@angular/core';
 import { Observable } from 'rxjs';
+import type { Source } from '../models/conversation.model';
 
 const API_BASE = 'http://localhost:8000/api/knowledge';
 
 export interface RagStreamEvent {
-    type: 'token' | 'thinking' | 'done' | 'error';
+    type: 'token' | 'thinking' | 'sources' | 'done' | 'error';
     token?: string;
     error?: string;
+    sources?: Source[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -65,6 +67,10 @@ export class RagChatService {
                                                 } else if (currentEventType === 'token' && data.token) {
                                                     this.zone.run(() => {
                                                         subscriber.next({ type: 'token', token: data.token });
+                                                    });
+                                                } else if (currentEventType === 'sources' && Array.isArray(data)) {
+                                                    this.zone.run(() => {
+                                                        subscriber.next({ type: 'sources', sources: data });
                                                     });
                                                 } else if (
                                                     currentEventType === 'done' ||

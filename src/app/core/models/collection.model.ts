@@ -21,6 +21,7 @@ export interface CollectionDocument {
     chunk_count: number;
     status: DocumentStatus;
     error_message: string | null;
+    summary: string | null;
     created_at: string;
 }
 

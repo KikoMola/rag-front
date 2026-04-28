@@ -53,24 +53,54 @@
                     } @else {
                         <!-- Assistant Message -->
                         <div class="flex flex-col items-start">
-                            @if (msg.content) {
-                                <div
-                                    class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none max-w-5xl border border-outline-variant/10"
-                                >
+                            <!-- Thinking Block -->
+                            @if (msg.thinking) {
+                                <div class="mb-4 w-full max-w-5xl">
+                                    <div class="inline-flex flex-col max-w-full">
+                                        <button
+                                            (click)="toggleThinking($index)"
+                                            class="self-start flex items-center gap-2 px-4 py-2 bg-tertiary-fixed-dim/8 hover:bg-tertiary-fixed-dim/15 transition-colors cursor-pointer rounded-t-2xl group relative z-10"
+                                            [class.rounded-b-2xl]="!isThinkingExpanded($index) && !(msg.streaming && !msg.content)"
+                                        >
+                                            <svg [lucideIcon]="LucideBrain" class="size-4 text-tertiary-fixed-dim"></svg>
+                                            <span class="text-[11px] font-bold uppercase tracking-widest text-tertiary-fixed-dim">
+                                                @if (msg.streaming && !msg.content) {
+                                                    Analizando...
+                                                } @else {
+                                                    Razonamiento
+                                                }
+                                            </span>
+                                            <div class="text-tertiary-fixed-dim/70 group-hover:text-tertiary-fixed-dim transition-colors ml-2">
+                                                @if (msg.streaming && !msg.content) {
+                                                    <svg [lucideIcon]="LucideLoader" class="size-3.5 animate-spin"></svg>
+                                                } @else {
+                                                    <svg
+                                                        [lucideIcon]="LucideChevronDown"
+                                                        class="size-3.5 transition-transform duration-300"
+                                                        [class.rotate-180]="isThinkingExpanded($index)"
+                                                    ></svg>
+                                                }
+                                            </div>
+                                        </button>
+                                        @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
+                                            <div class="bg-tertiary-fixed-dim/4 rounded-b-2xl rounded-tr-2xl p-6 text-sm text-on-surface-variant/90 leading-relaxed max-w-full">
+                                                <div class="prose prose-thinking max-w-none text-on-surface-variant" [innerHTML]="msg.thinking | markdown"></div>
+                                                @if (msg.streaming && !msg.content) {
+                                                    <span class="inline-block w-1.5 h-4 bg-tertiary-fixed-dim/60 animate-pulse ml-1 align-middle"></span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Response Content -->
+                            @if (msg.content || !msg.thinking) {
+                                <div class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none max-w-5xl border border-outline-variant/10">
                                     <div class="prose" [innerHTML]="msg.content | markdown"></div>
                                     @if (msg.streaming) {
-                                        <span
-                                            class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 align-middle"
-                                        ></span>
+                                        <span class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 align-middle"></span>
                                     }
-                                </div>
-                            } @else if (msg.streaming) {
-                                <div
-                                    class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none border border-outline-variant/10"
-                                >
-                                    <span
-                                        class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse align-middle"
-                                    ></span>
                                 </div>
                             }
                             <span

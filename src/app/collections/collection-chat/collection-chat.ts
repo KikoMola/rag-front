@@ -21,18 +21,21 @@ import {
     LucideLoader,
     LucideBrain,
     LucideChevronDown,
+    LucideFileText,
     LucideSquare,
 } from '@lucide/angular';
-import { Subscription } from 'rxjs';
+import { map, of, Subscription, switchMap, tap } from 'rxjs';
 import { CollectionsService } from '../../core/services/collections.service';
-import { RagChatService } from '../../core/services/rag-chat.service';
+import { ChatService } from '../../core/services/chat.service';
 import { MarkdownPipe } from '../../core/pipes/markdown.pipe';
 import type { Collection } from '../../core/models/collection.model';
+import type { Source } from '../../core/models/conversation.model';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
     thinking?: string;
+    sources?: Source[];
     timestamp: Date;
     streaming?: boolean;
 }
@@ -54,12 +57,13 @@ export class CollectionChat implements OnInit, OnDestroy {
     protected readonly LucideLoader = LucideLoader;
     protected readonly LucideBrain = LucideBrain;
     protected readonly LucideChevronDown = LucideChevronDown;
+    protected readonly LucideFileText = LucideFileText;
     protected readonly LucideSquare = LucideSquare;
 
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly collectionsService = inject(CollectionsService);
-    private readonly ragChatService = inject(RagChatService);
+    private readonly chatService = inject(ChatService);
 
     private streamSub: Subscription | null = null;
 
@@ -76,6 +80,7 @@ export class CollectionChat implements OnInit, OnDestroy {
 
     collectionId = signal(0);
     collection = signal<Collection | null>(null);
+    conversationId = signal<number | null>(null);
     messages = signal<ChatMessage[]>([]);
     inputValue = signal('');
     streaming = signal(false);
@@ -121,6 +126,7 @@ export class CollectionChat implements OnInit, OnDestroy {
             role: 'assistant',
             content: '',
             thinking: '',
+            sources: [],
             timestamp: new Date(),
             streaming: true,
         };
@@ -131,47 +137,56 @@ export class CollectionChat implements OnInit, OnDestroy {
 
         let fullResponse = '';
         let thinkingContent = '';
+        let sources: Source[] = [];
 
-        this.streamSub = this.ragChatService.queryCollection(this.collectionId(), question).subscribe({
-            next: (event) => {
-                if (event.type === 'thinking' && event.token) {
-                    thinkingContent += event.token;
-                    this.updateLastMessage(fullResponse, thinkingContent);
-                }
+        const conversationId$ = this.conversationId()
+            ? of(this.conversationId()!)
+            : this.chatService
+                  .createConversation({ mode: 'rag', collection_ids: [this.collectionId()] })
+                  .pipe(
+                      tap((conv) => this.conversationId.set(conv.id)),
+                      map((conv) => conv.id),
+                  );
 
-                if (event.type === 'token' && event.token) {
-                    fullResponse += event.token;
-                    this.updateLastMessage(fullResponse, thinkingContent);
-                }
-
-                if (event.type === 'done') {
-                    this.finishStream();
-                }
-
-                if (event.type === 'error') {
+        this.streamSub = conversationId$
+            .pipe(switchMap((id) => this.chatService.sendMessage(id, question)))
+            .subscribe({
+                next: (event) => {
+                    if (event.type === 'thinking') {
+                        thinkingContent += event.token;
+                        this.updateLastMessage(fullResponse, thinkingContent, sources);
+                    } else if (event.type === 'sources') {
+                        sources = event.sources;
+                        this.updateLastMessage(fullResponse, thinkingContent, sources);
+                    } else if (event.type === 'token') {
+                        fullResponse += event.token;
+                        this.updateLastMessage(fullResponse, thinkingContent, sources);
+                    } else if (event.type === 'done') {
+                        this.finishStream();
+                    } else if (event.type === 'error') {
+                        this.messages.update((msgs) => {
+                            const updated = [...msgs];
+                            const last = { ...updated[updated.length - 1] };
+                            last.content = event.error ?? 'Error al procesar la consulta.';
+                            last.streaming = false;
+                            updated[updated.length - 1] = last;
+                            return updated;
+                        });
+                        this.streaming.set(false);
+                    }
+                },
+                error: () => {
                     this.messages.update((msgs) => {
                         const updated = [...msgs];
                         const last = { ...updated[updated.length - 1] };
-                        last.content = event.error ?? 'Error al procesar la consulta.';
+                        last.content = 'Error de conexión con el servidor.';
                         last.streaming = false;
                         updated[updated.length - 1] = last;
                         return updated;
                     });
                     this.streaming.set(false);
-                }
-            },
-            error: () => {
-                this.messages.update((msgs) => {
-                    const updated = [...msgs];
-                    const last = { ...updated[updated.length - 1] };
-                    last.content = 'Error de conexión con el servidor.';
-                    last.streaming = false;
-                    updated[updated.length - 1] = last;
-                    return updated;
-                });
-                this.streaming.set(false);
-            },
-        });
+                },
+            });
     }
 
     stopStream(): void {
@@ -218,12 +233,13 @@ export class CollectionChat implements OnInit, OnDestroy {
         this.streaming.set(false);
     }
 
-    private updateLastMessage(content: string, thinking: string): void {
+    private updateLastMessage(content: string, thinking: string, sources: Source[]): void {
         this.messages.update((msgs) => {
             const updated = [...msgs];
             const last = { ...updated[updated.length - 1] };
             last.content = content;
             last.thinking = thinking;
+            last.sources = sources;
             updated[updated.length - 1] = last;
             return updated;
         });

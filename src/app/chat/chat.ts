@@ -2,33 +2,34 @@ import {
     ChangeDetectionStrategy,
     Component,
     ElementRef,
+    OnDestroy,
     computed,
     effect,
+    inject,
     signal,
     viewChild,
 } from '@angular/core';
 import {
     LucideArrowUp,
-    LucideBot,
+    LucideBrain,
+    LucideChevronDown,
     LucideDynamicIcon,
+    LucideLoader,
     LucideSparkles,
     LucideSquare,
 } from '@lucide/angular';
+import { map, of, switchMap, tap } from 'rxjs';
+import type { Subscription } from 'rxjs';
+import { ChatService } from '../core/services/chat.service';
 import { MarkdownPipe } from '../core/pipes/markdown.pipe';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
+    thinking?: string;
     timestamp: Date;
     streaming?: boolean;
 }
-
-const MOCK_RESPONSES = [
-    'Claro, puedo ayudarte con eso. Esta es una respuesta de ejemplo del chat general.',
-    'Interesante pregunta. En un chat general puedes preguntarme lo que necesites.',
-    'Estoy aquí para ayudarte. Esta funcionalidad está en desarrollo, pronto podrás conectarla a un modelo real.',
-    'Esa es una buena pregunta. De momento estoy en modo demo, pero muy pronto estaré completamente operativo.',
-];
 
 @Component({
     selector: 'app-chat',
@@ -38,21 +39,28 @@ const MOCK_RESPONSES = [
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'flex flex-col h-full' },
 })
-export class Chat {
+export class Chat implements OnDestroy {
     protected readonly LucideArrowUp = LucideArrowUp;
-    protected readonly LucideBot = LucideBot;
+    protected readonly LucideBrain = LucideBrain;
+    protected readonly LucideChevronDown = LucideChevronDown;
+    protected readonly LucideLoader = LucideLoader;
     protected readonly LucideSparkles = LucideSparkles;
     protected readonly LucideSquare = LucideSquare;
+
+    private readonly chatService = inject(ChatService);
+
+    private streamSub: Subscription | null = null;
 
     readonly messagesContainer = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
 
     messages = signal<ChatMessage[]>([]);
     inputValue = signal('');
     streaming = signal(false);
+    conversationId = signal<number | null>(null);
+
+    expandedThinking = signal<Set<number>>(new Set());
 
     hasMessages = computed(() => this.messages().length > 0);
-
-    private mockTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor() {
         effect(() => {
@@ -63,6 +71,10 @@ export class Chat {
         });
     }
 
+    ngOnDestroy(): void {
+        this.streamSub?.unsubscribe();
+    }
+
     sendMessage(): void {
         const question = this.inputValue().trim();
         if (!question || this.streaming()) return;
@@ -71,6 +83,7 @@ export class Chat {
         const assistantMsg: ChatMessage = {
             role: 'assistant',
             content: '',
+            thinking: '',
             timestamp: new Date(),
             streaming: true,
         };
@@ -79,35 +92,74 @@ export class Chat {
         this.inputValue.set('');
         this.streaming.set(true);
 
-        const response = MOCK_RESPONSES[Math.floor(Math.random() * MOCK_RESPONSES.length)];
+        let fullResponse = '';
+        let thinkingContent = '';
 
-        this.mockTimer = setTimeout(() => {
-            this.messages.update((msgs) => {
-                const updated = [...msgs];
-                const last = { ...updated[updated.length - 1] };
-                last.content = response;
-                last.streaming = false;
-                updated[updated.length - 1] = last;
-                return updated;
+        const conversationId$ = this.conversationId()
+            ? of(this.conversationId()!)
+            : this.chatService.createConversation({ mode: 'general' }).pipe(
+                  tap((conv) => this.conversationId.set(conv.id)),
+                  map((conv) => conv.id),
+              );
+
+        this.streamSub = conversationId$
+            .pipe(switchMap((id) => this.chatService.sendMessage(id, question)))
+            .subscribe({
+                next: (event) => {
+                    if (event.type === 'thinking') {
+                        thinkingContent += event.token;
+                        this.updateLastMessage(fullResponse, thinkingContent);
+                    } else if (event.type === 'token') {
+                        fullResponse += event.token;
+                        this.updateLastMessage(fullResponse, thinkingContent);
+                    } else if (event.type === 'done') {
+                        this.finishStream();
+                    } else if (event.type === 'error') {
+                        this.messages.update((msgs) => {
+                            const updated = [...msgs];
+                            const last = { ...updated[updated.length - 1] };
+                            last.content = event.error ?? 'Error al procesar la consulta.';
+                            last.streaming = false;
+                            updated[updated.length - 1] = last;
+                            return updated;
+                        });
+                        this.streaming.set(false);
+                    }
+                },
+                error: () => {
+                    this.messages.update((msgs) => {
+                        const updated = [...msgs];
+                        const last = { ...updated[updated.length - 1] };
+                        last.content = 'Error de conexión con el servidor.';
+                        last.streaming = false;
+                        updated[updated.length - 1] = last;
+                        return updated;
+                    });
+                    this.streaming.set(false);
+                },
             });
-            this.streaming.set(false);
-            this.mockTimer = null;
-        }, 1200);
     }
 
     stopStream(): void {
-        if (this.mockTimer) {
-            clearTimeout(this.mockTimer);
-            this.mockTimer = null;
-        }
-        this.messages.update((msgs) => {
-            const updated = [...msgs];
-            const last = { ...updated[updated.length - 1] };
-            last.streaming = false;
-            updated[updated.length - 1] = last;
-            return updated;
+        this.streamSub?.unsubscribe();
+        this.streamSub = null;
+        this.finishStream();
+    }
+
+    toggleThinking(index: number): void {
+        this.expandedThinking.update((set) => {
+            const newSet = new Set(set);
+            if (newSet.has(index)) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+            }
+            return newSet;
         });
-        this.streaming.set(false);
+    }
+
+    isThinkingExpanded(index: number): boolean {
+        return this.expandedThinking().has(index);
     }
 
     onKeydown(event: KeyboardEvent): void {
@@ -119,6 +171,28 @@ export class Chat {
 
     formatTime(date: Date): string {
         return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    private finishStream(): void {
+        this.messages.update((msgs) => {
+            const updated = [...msgs];
+            const last = { ...updated[updated.length - 1] };
+            last.streaming = false;
+            updated[updated.length - 1] = last;
+            return updated;
+        });
+        this.streaming.set(false);
+    }
+
+    private updateLastMessage(content: string, thinking: string): void {
+        this.messages.update((msgs) => {
+            const updated = [...msgs];
+            const last = { ...updated[updated.length - 1] };
+            last.content = content;
+            last.thinking = thinking;
+            updated[updated.length - 1] = last;
+            return updated;
+        });
     }
 
     private scrollToBottom(): void {
