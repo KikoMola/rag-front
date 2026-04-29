@@ -74,17 +74,18 @@
 .prose pre {
     margin-top: 0.75em;
     margin-bottom: 0.75em;
-    padding: 1em;
+    padding: 0;
     border-radius: 0.75rem;
-    background: var(--color-surface-container, #e2e5ea);
-    overflow-x: auto;
+    overflow: hidden;
 }
 
-.prose pre code {
-    padding: 0;
-    background: transparent;
+.prose pre code.hljs {
+    padding: 1em 1.25em;
+    border-radius: 0.75rem;
     font-size: 0.8125em;
     line-height: 1.6;
+    overflow-x: auto;
+    display: block;
 }
 
 .prose blockquote {
