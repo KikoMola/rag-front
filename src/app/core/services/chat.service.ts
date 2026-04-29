@@ -56,7 +56,7 @@ export class ChatService {
         });
     }
 
-    sendMessage(conversationId: number, content: string): Observable<ChatStreamEvent> {
+    sendMessage(conversationId: number, content: string, model?: string): Observable<ChatStreamEvent> {
         return new Observable<ChatStreamEvent>((subscriber) => {
             const abortController = new AbortController();
 
@@ -64,7 +64,7 @@ export class ChatService {
                 fetch(`${API_BASE}/chat/conversations/${conversationId}/messages`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content }),
+                    body: JSON.stringify({ content, ...(model ? { model } : {}) }),
                     signal: abortController.signal,
                 })
                     .then((response) => {

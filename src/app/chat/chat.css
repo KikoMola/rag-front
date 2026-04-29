@@ -1,6 +1,5 @@
 :host {
     display: flex;
-    flex-direction: column;
     height: 100%;
     overflow: hidden;
 }
@@ -130,4 +129,10 @@
 .prose th {
     font-weight: 700;
     color: var(--color-on-surface, #0e1117);
+}
+
+.prose-thinking {
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: var(--color-on-surface-variant, #4a4f57);
 }
