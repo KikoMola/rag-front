@@ -13,8 +13,11 @@ import {
 import {
     LucideArrowUp,
     LucideBrain,
+    LucideCheck,
     LucideChevronDown,
+    LucideCopy,
     LucideDynamicIcon,
+    LucideGitFork,
     LucideLoader,
     LucideMessageSquarePlus,
     LucideSparkles,
@@ -33,6 +36,7 @@ interface ChatMessage {
     thinking?: string;
     timestamp: Date;
     streaming?: boolean;
+    messageId?: number;
 }
 
 interface ModelOption {
@@ -59,7 +63,10 @@ const MODELS: ModelOption[] = [
 export class Chat implements OnInit, OnDestroy {
     protected readonly LucideArrowUp = LucideArrowUp;
     protected readonly LucideBrain = LucideBrain;
+    protected readonly LucideCheck = LucideCheck;
     protected readonly LucideChevronDown = LucideChevronDown;
+    protected readonly LucideCopy = LucideCopy;
+    protected readonly LucideGitFork = LucideGitFork;
     protected readonly LucideLoader = LucideLoader;
     protected readonly LucideMessageSquarePlus = LucideMessageSquarePlus;
     protected readonly LucideSparkles = LucideSparkles;
@@ -80,6 +87,7 @@ export class Chat implements OnInit, OnDestroy {
     loadingConversations = signal(true);
     selectedModel = signal<ModelOption>(MODELS[0]);
     expandedThinking = signal<Set<number>>(new Set());
+    copiedIndex = signal<number | null>(null);
 
     hasMessages = computed(() => this.messages().length > 0);
 
@@ -123,6 +131,7 @@ export class Chat implements OnInit, OnDestroy {
                         role: m.role,
                         content: m.content,
                         timestamp: new Date(m.created_at),
+                        messageId: m.id,
                     })),
                 );
                 this.expandedThinking.set(new Set());
@@ -192,6 +201,16 @@ export class Chat implements OnInit, OnDestroy {
                         this.updateLastMessage(fullResponse, thinkingContent);
                     } else if (event.type === 'done') {
                         this.finishStream();
+                        const convId = this.conversationId();
+                        if (convId) {
+                            this.chatService.getConversation(convId).subscribe({
+                                next: (detail) => {
+                                    this.messages.update((msgs) =>
+                                        msgs.map((m, i) => ({ ...m, messageId: detail.messages[i]?.id }))
+                                    );
+                                },
+                            });
+                        }
                         if (justCreated) {
                             this.refreshConversations();
                             justCreated = false;
@@ -253,6 +272,37 @@ export class Chat implements OnInit, OnDestroy {
 
     formatTime(date: Date): string {
         return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    copyMessage(content: string, index: number): void {
+        navigator.clipboard.writeText(content).then(() => {
+            this.copiedIndex.set(index);
+            setTimeout(() => this.copiedIndex.set(null), 2000);
+        });
+    }
+
+    forkFromMessage(messageId: number): void {
+        const convId = this.conversationId();
+        if (!convId) return;
+        this.chatService.forkConversation(convId, messageId).subscribe({
+            next: (fork) => {
+                this.refreshConversations();
+                this.chatService.getConversation(fork.id).subscribe({
+                    next: (detail) => {
+                        this.conversationId.set(detail.id);
+                        this.messages.set(
+                            detail.messages.map((m) => ({
+                                role: m.role,
+                                content: m.content,
+                                timestamp: new Date(m.created_at),
+                                messageId: m.id,
+                            }))
+                        );
+                        this.expandedThinking.set(new Set());
+                    },
+                });
+            },
+        });
     }
 
     formatDate(dateStr: string): string {

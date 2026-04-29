@@ -103,9 +103,21 @@
                             <div class="bg-primary text-on-primary p-5 rounded-2xl rounded-tr-none max-w-2xl">
                                 <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
                             </div>
-                            <span class="text-[10px] text-on-surface-variant mt-2 font-medium uppercase tracking-wider">
-                                Tú • {{ formatTime(msg.timestamp) }}
-                            </span>
+                            <div class="flex items-center gap-2 mt-2">
+                                @if (msg.messageId) {
+                                    <button
+                                        (click)="forkFromMessage(msg.messageId)"
+                                        class="p-1 rounded-lg text-on-surface-variant/30 hover:text-on-surface-variant hover:bg-surface-container transition-all cursor-pointer"
+                                        title="Bifurcar desde aquí"
+                                        aria-label="Bifurcar conversación desde este mensaje"
+                                    >
+                                        <svg [lucideIcon]="LucideGitFork" class="size-3.5"></svg>
+                                    </button>
+                                }
+                                <span class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider">
+                                    Tú • {{ formatTime(msg.timestamp) }}
+                                </span>
+                            </div>
                         </div>
                     } @else {
                         <!-- Assistant Message -->
@@ -161,10 +173,36 @@
                                 </div>
                             }
 
-                            <span class="text-[10px] text-primary-container mt-2 font-bold uppercase tracking-widest flex items-center gap-1">
-                                <svg [lucideIcon]="LucideSparkles" class="size-3"></svg>
-                                C.O.R.E. • {{ formatTime(msg.timestamp) }}
-                            </span>
+                            <div class="flex items-center gap-1 mt-2">
+                                <svg [lucideIcon]="LucideSparkles" class="size-3 text-primary-container"></svg>
+                                <span class="text-[10px] text-primary-container font-bold uppercase tracking-widest">
+                                    C.O.R.E. • {{ formatTime(msg.timestamp) }}
+                                </span>
+                                @if (!msg.streaming) {
+                                    <button
+                                        (click)="copyMessage(msg.content, $index)"
+                                        class="ml-1 p-1 rounded-lg text-on-surface-variant/30 hover:text-on-surface-variant hover:bg-surface-container transition-all cursor-pointer"
+                                        [title]="copiedIndex() === $index ? 'Copiado' : 'Copiar respuesta'"
+                                        [attr.aria-label]="copiedIndex() === $index ? 'Copiado' : 'Copiar respuesta'"
+                                    >
+                                        @if (copiedIndex() === $index) {
+                                            <svg [lucideIcon]="LucideCheck" class="size-3.5 text-primary"></svg>
+                                        } @else {
+                                            <svg [lucideIcon]="LucideCopy" class="size-3.5"></svg>
+                                        }
+                                    </button>
+                                    @if (msg.messageId) {
+                                        <button
+                                            (click)="forkFromMessage(msg.messageId)"
+                                            class="p-1 rounded-lg text-on-surface-variant/30 hover:text-on-surface-variant hover:bg-surface-container transition-all cursor-pointer"
+                                            title="Bifurcar desde aquí"
+                                            aria-label="Bifurcar conversación desde este mensaje"
+                                        >
+                                            <svg [lucideIcon]="LucideGitFork" class="size-3.5"></svg>
+                                        </button>
+                                    }
+                                }
+                            </div>
                         </div>
                     }
                 }
