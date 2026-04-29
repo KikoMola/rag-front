@@ -52,7 +52,7 @@ describe('MarkdownPipe', () => {
     it('renders a fenced code block', () => {
         const result = String(pipe.transform('```\nconst x = 1;\n```'));
         expect(result).toContain('<pre>');
-        expect(result).toContain('<code>');
+        expect(result).toContain('<code');
     });
 
     it('renders an unordered list', () => {

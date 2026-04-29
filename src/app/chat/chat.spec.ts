@@ -334,11 +334,14 @@ describe('Chat', () => {
         });
 
         it('adds a user message and a streaming assistant message', () => {
+            const stream = new Subject<ChatStreamEvent>();
+            mockChatService.sendMessage.mockReturnValue(stream.asObservable());
             component.conversationId.set(5);
             component.inputValue.set('my question');
             component.sendMessage();
             expect(component.messages()[0]).toMatchObject({ role: 'user', content: 'my question' });
             expect(component.messages()[1]).toMatchObject({ role: 'assistant', streaming: true });
+            stream.complete();
         });
 
         it('clears inputValue after sending', () => {
