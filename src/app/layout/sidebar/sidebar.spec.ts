@@ -19,16 +19,17 @@ describe('Sidebar', () => {
         const fixture = TestBed.createComponent(Sidebar);
         fixture.detectChanges();
         const items = fixture.componentInstance['navItems']();
-        expect(items).toHaveLength(2);
+        expect(items).toHaveLength(3);
         expect(items[0].label).toBe('Dashboard');
-        expect(items[1].label).toBe('Collections');
+        expect(items[1].label).toBe('Chat');
+        expect(items[2].label).toBe('Collections');
     });
 
     it('should render navigation links', () => {
         const fixture = TestBed.createComponent(Sidebar);
         fixture.detectChanges();
         const links = fixture.nativeElement.querySelectorAll('nav a');
-        expect(links).toHaveLength(2);
+        expect(links).toHaveLength(3);
     });
 
     it('should render logo section', () => {

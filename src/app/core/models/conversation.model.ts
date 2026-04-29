@@ -53,4 +53,4 @@ export type ChatStreamEvent =
     | { type: 'token'; token: string }
     | { type: 'sources'; sources: Source[] }
     | { type: 'done'; messageId: number }
-    | { type: 'error'; error: string };
+    | { type: 'error'; error?: string };
