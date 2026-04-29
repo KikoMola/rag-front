@@ -86,6 +86,7 @@ describe('CollectionsService', () => {
                     size_bytes: 1024,
                     chunk_count: 10,
                     status: 'indexed',
+                    summary: null,
                     error_message: null,
                     created_at: '2026-01-01',
                 },
@@ -112,6 +113,7 @@ describe('CollectionsService', () => {
                 size_bytes: 2048,
                 chunk_count: 5,
                 status: 'processing',
+                summary: null,
                 error_message: null,
                 created_at: '2026-01-01',
             };
