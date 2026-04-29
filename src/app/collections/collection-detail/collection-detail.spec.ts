@@ -15,12 +15,12 @@ const mockDocuments: CollectionDocument[] = [
     {
         id: 1, collection_id: 5, filename: 'doc.pdf', filepath: '/files/doc.pdf',
         format: 'pdf', size_bytes: 1048576, chunk_count: 20, status: 'indexed',
-        error_message: null, created_at: '2026-01-01',
+        summary: null, error_message: null, created_at: '2026-01-01',
     },
     {
         id: 2, collection_id: 5, filename: 'readme.md', filepath: '/files/readme.md',
         format: 'md', size_bytes: 512, chunk_count: 2, status: 'processing',
-        error_message: null, created_at: '2026-01-02',
+        summary: null, error_message: null, created_at: '2026-01-02',
     },
 ];
 
@@ -256,7 +256,7 @@ describe('CollectionDetail', () => {
         const newDoc: CollectionDocument = {
             id: 10, collection_id: 5, filename: 'new.pdf', filepath: '/new.pdf',
             format: 'pdf', size_bytes: 100, chunk_count: 1, status: 'pending',
-            error_message: null, created_at: '2026-01-10',
+            summary: null, error_message: null, created_at: '2026-01-10',
         };
 
         fixture.componentInstance.uploadFiles([new File(['x'], 'new.pdf')]);
@@ -415,10 +415,10 @@ describe('CollectionDetail', () => {
 
     it('should render document table with all statuses', () => {
         const allStatusDocs: CollectionDocument[] = [
-            { id: 1, collection_id: 5, filename: 'a.pdf', filepath: '/a.pdf', format: 'pdf', size_bytes: 1024, chunk_count: 5, status: 'indexed', error_message: null, created_at: '2026-01-01' },
-            { id: 2, collection_id: 5, filename: 'b.txt', filepath: '/b.txt', format: 'txt', size_bytes: 512, chunk_count: 0, status: 'processing', error_message: null, created_at: '2026-01-01' },
-            { id: 3, collection_id: 5, filename: 'c.md', filepath: '/c.md', format: 'md', size_bytes: 256, chunk_count: 0, status: 'pending', error_message: null, created_at: '2026-01-01' },
-            { id: 4, collection_id: 5, filename: 'd.html', filepath: '/d.html', format: 'html', size_bytes: 100, chunk_count: 0, status: 'error', error_message: 'Parse failed', created_at: '2026-01-01' },
+            { id: 1, collection_id: 5, filename: 'a.pdf', filepath: '/a.pdf', format: 'pdf', size_bytes: 1024, chunk_count: 5, status: 'indexed', summary: null, error_message: null, created_at: '2026-01-01' },
+            { id: 2, collection_id: 5, filename: 'b.txt', filepath: '/b.txt', format: 'txt', size_bytes: 512, chunk_count: 0, status: 'processing', summary: null, error_message: null, created_at: '2026-01-01' },
+            { id: 3, collection_id: 5, filename: 'c.md', filepath: '/c.md', format: 'md', size_bytes: 256, chunk_count: 0, status: 'pending', summary: null, error_message: null, created_at: '2026-01-01' },
+            { id: 4, collection_id: 5, filename: 'd.html', filepath: '/d.html', format: 'html', size_bytes: 100, chunk_count: 0, status: 'error', summary: null, error_message: 'Parse failed', created_at: '2026-01-01' },
         ];
 
         const fixture = createFixture();

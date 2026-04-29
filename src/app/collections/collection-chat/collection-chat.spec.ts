@@ -4,7 +4,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { of, Subject } from 'rxjs';
 import { CollectionChat } from './collection-chat';
-import { RagChatService, type RagStreamEvent } from '../../core/services/rag-chat.service';
+import { ChatService } from '../../core/services/chat.service';
+import type { ChatStreamEvent, ConversationListItem } from '../../core/models/conversation.model';
 import type { Collection } from '../../core/models/collection.model';
 
 const API_BASE = 'http://localhost:8000/api/knowledge';
@@ -12,6 +13,15 @@ const API_BASE = 'http://localhost:8000/api/knowledge';
 const mockCollections: Collection[] = [
     { id: 3, name: 'Chat Collection', description: 'Test', created_at: '2026-01-01', document_count: 5 },
 ];
+
+const mockConversation: ConversationListItem = {
+    id: 42,
+    title: 'New Conversation',
+    mode: 'rag',
+    forked_from_id: null,
+    created_at: '2026-01-01',
+    updated_at: '2026-01-01',
+};
 
 const mockRoute = { snapshot: { paramMap: { get: (_key: string): string | null => '3' } } };
 
@@ -21,11 +31,16 @@ function setRouteId(id: string | null) {
 
 describe('CollectionChat', () => {
     let httpTesting: HttpTestingController;
-    let ragChatStream$: Subject<RagStreamEvent>;
+    let chatStream$: Subject<ChatStreamEvent>;
+    let chatServiceMock: { createConversation: ReturnType<typeof vi.fn>; sendMessage: ReturnType<typeof vi.fn> };
 
     beforeEach(async () => {
-        ragChatStream$ = new Subject<RagStreamEvent>();
+        chatStream$ = new Subject<ChatStreamEvent>();
         setRouteId('3');
+        chatServiceMock = {
+            createConversation: vi.fn(() => of(mockConversation)),
+            sendMessage: vi.fn(() => chatStream$.asObservable()),
+        };
 
         await TestBed.configureTestingModule({
             imports: [CollectionChat, RouterModule.forRoot([])],
@@ -33,12 +48,7 @@ describe('CollectionChat', () => {
                 provideHttpClient(),
                 provideHttpClientTesting(),
                 { provide: ActivatedRoute, useValue: mockRoute },
-                {
-                    provide: RagChatService,
-                    useValue: {
-                        queryCollection: vi.fn(() => ragChatStream$.asObservable()),
-                    },
-                },
+                { provide: ChatService, useValue: chatServiceMock },
             ],
         }).compileComponents();
         httpTesting = TestBed.inject(HttpTestingController);
@@ -103,25 +113,25 @@ describe('CollectionChat', () => {
 
     it('should send message and stream response', () => {
         const fixture = initComponent();
-        const ragService = TestBed.inject(RagChatService);
 
         fixture.componentInstance.inputValue.set('What is Angular?');
         fixture.componentInstance.sendMessage();
 
-        expect(ragService.queryCollection).toHaveBeenCalledWith(3, 'What is Angular?');
+        expect(chatServiceMock.createConversation).toHaveBeenCalledWith({ mode: 'rag', collection_ids: [3] });
+        expect(chatServiceMock.sendMessage).toHaveBeenCalledWith(42, 'What is Angular?');
         expect(fixture.componentInstance.streaming()).toBe(true);
         expect(fixture.componentInstance.messages()).toHaveLength(2);
         expect(fixture.componentInstance.inputValue()).toBe('');
 
         // Stream tokens
-        ragChatStream$.next({ type: 'token', token: 'Hello' });
+        chatStream$.next({ type: 'token', token: 'Hello' });
         expect(fixture.componentInstance.messages()[1].content).toBe('Hello');
 
-        ragChatStream$.next({ type: 'token', token: ' World' });
+        chatStream$.next({ type: 'token', token: ' World' });
         expect(fixture.componentInstance.messages()[1].content).toBe('Hello World');
 
         // Done
-        ragChatStream$.next({ type: 'done' });
+        chatStream$.next({ type: 'done', messageId: 1 });
         expect(fixture.componentInstance.streaming()).toBe(false);
         expect(fixture.componentInstance.messages()[1].streaming).toBe(false);
     });
@@ -132,10 +142,10 @@ describe('CollectionChat', () => {
         fixture.componentInstance.inputValue.set('test');
         fixture.componentInstance.sendMessage();
 
-        ragChatStream$.next({ type: 'thinking', token: 'Hmm' });
+        chatStream$.next({ type: 'thinking', token: 'Hmm' });
         expect(fixture.componentInstance.messages()[1].thinking).toBe('Hmm');
 
-        ragChatStream$.next({ type: 'thinking', token: '...' });
+        chatStream$.next({ type: 'thinking', token: '...' });
         expect(fixture.componentInstance.messages()[1].thinking).toBe('Hmm...');
     });
 
@@ -145,7 +155,7 @@ describe('CollectionChat', () => {
         fixture.componentInstance.inputValue.set('test');
         fixture.componentInstance.sendMessage();
 
-        ragChatStream$.next({ type: 'error', error: 'Something failed' });
+        chatStream$.next({ type: 'error', error: 'Something failed' });
         expect(fixture.componentInstance.messages()[1].content).toBe('Something failed');
         expect(fixture.componentInstance.streaming()).toBe(false);
     });
@@ -156,7 +166,7 @@ describe('CollectionChat', () => {
         fixture.componentInstance.inputValue.set('test');
         fixture.componentInstance.sendMessage();
 
-        ragChatStream$.next({ type: 'error' });
+        chatStream$.next({ type: 'error', error: undefined });
         expect(fixture.componentInstance.messages()[1].content).toBe('Error al procesar la consulta.');
     });
 
@@ -166,24 +176,22 @@ describe('CollectionChat', () => {
         fixture.componentInstance.inputValue.set('test');
         fixture.componentInstance.sendMessage();
 
-        ragChatStream$.error(new Error('Network error'));
+        chatStream$.error(new Error('Network error'));
         expect(fixture.componentInstance.messages()[1].content).toBe('Error de conexión con el servidor.');
         expect(fixture.componentInstance.streaming()).toBe(false);
     });
 
     it('should not send empty message', () => {
         const fixture = initComponent();
-        const ragService = TestBed.inject(RagChatService);
 
         fixture.componentInstance.inputValue.set('   ');
         fixture.componentInstance.sendMessage();
 
-        expect(ragService.queryCollection).not.toHaveBeenCalled();
+        expect(chatServiceMock.sendMessage).not.toHaveBeenCalled();
     });
 
     it('should not send while already streaming', () => {
         const fixture = initComponent();
-        const ragService = TestBed.inject(RagChatService);
 
         fixture.componentInstance.inputValue.set('first');
         fixture.componentInstance.sendMessage();
@@ -191,7 +199,7 @@ describe('CollectionChat', () => {
         fixture.componentInstance.inputValue.set('second');
         fixture.componentInstance.sendMessage();
 
-        expect(ragService.queryCollection).toHaveBeenCalledTimes(1);
+        expect(chatServiceMock.sendMessage).toHaveBeenCalledTimes(1);
     });
 
     it('should stop stream on stopStream', () => {
@@ -204,6 +212,8 @@ describe('CollectionChat', () => {
         fixture.componentInstance.stopStream();
         expect(fixture.componentInstance.streaming()).toBe(false);
         expect(fixture.componentInstance.messages()[1].streaming).toBe(false);
+        // Complete subject to avoid uncompleted observable warning
+        chatStream$.complete();
     });
 
     it('should toggle thinking expansion', () => {
@@ -218,7 +228,6 @@ describe('CollectionChat', () => {
 
     it('should handle Enter key to send message', () => {
         const fixture = initComponent();
-        const ragService = TestBed.inject(RagChatService);
 
         fixture.componentInstance.inputValue.set('test');
 
@@ -228,31 +237,29 @@ describe('CollectionChat', () => {
         fixture.componentInstance.onKeydown(event);
 
         expect(event.preventDefault).toHaveBeenCalled();
-        expect(ragService.queryCollection).toHaveBeenCalled();
+        expect(chatServiceMock.sendMessage).toHaveBeenCalled();
     });
 
     it('should not send on Shift+Enter', () => {
         const fixture = initComponent();
-        const ragService = TestBed.inject(RagChatService);
 
         fixture.componentInstance.inputValue.set('test');
 
         const event = new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true });
         fixture.componentInstance.onKeydown(event);
 
-        expect(ragService.queryCollection).not.toHaveBeenCalled();
+        expect(chatServiceMock.sendMessage).not.toHaveBeenCalled();
     });
 
     it('should not send on other keys', () => {
         const fixture = initComponent();
-        const ragService = TestBed.inject(RagChatService);
 
         fixture.componentInstance.inputValue.set('test');
 
         const event = new KeyboardEvent('keydown', { key: 'a' });
         fixture.componentInstance.onKeydown(event);
 
-        expect(ragService.queryCollection).not.toHaveBeenCalled();
+        expect(chatServiceMock.sendMessage).not.toHaveBeenCalled();
     });
 
     it('should format time', () => {
@@ -404,7 +411,7 @@ describe('CollectionChat', () => {
     });
 
     it('should render collection not found state', () => {
-        setRouteId('999');
+        setRouteId('3');
         const fixture = TestBed.createComponent(CollectionChat);
         fixture.detectChanges();
         httpTesting.expectOne(`${API_BASE}/collections`).flush([]);

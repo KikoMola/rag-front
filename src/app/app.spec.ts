@@ -14,9 +14,11 @@ describe('App', () => {
         expect(fixture.componentInstance).toBeTruthy();
     });
 
-    it('should render a router-outlet', () => {
+    it('should render the router outlet', () => {
         const fixture = TestBed.createComponent(App);
+        fixture.detectChanges();
         const compiled = fixture.nativeElement as HTMLElement;
+        expect(compiled.querySelector('router-outlet')).toBeTruthy();
         expect(compiled.querySelector('router-outlet')).toBeTruthy();
     });
 });

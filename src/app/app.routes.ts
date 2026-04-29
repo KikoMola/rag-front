@@ -23,6 +23,10 @@ export const routes: Routes = [
                 path: 'collections/:id/chat',
                 loadComponent: () =>
                     import('./collections/collection-chat/collection-chat').then((m) => m.CollectionChat),
+            },
+            {
+                path: 'chat',
+                loadComponent: () => import('./chat/chat').then((m) => m.Chat),
             }
         ],
     },

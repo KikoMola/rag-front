@@ -132,6 +132,24 @@
 
                                 <!-- Response Content -->
                                 @if (msg.content || !msg.thinking) {
+                                    <!-- Sources -->
+                                    @if (msg.sources?.length) {
+                                        <details class="mb-3 group/sources max-w-5xl">
+                                            <summary class="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl cursor-pointer list-none text-[11px] font-bold uppercase tracking-widest text-on-surface-variant hover:bg-surface-bright transition-colors">
+                                                <svg [lucideIcon]="LucideFileText" class="size-3.5 text-primary shrink-0"></svg>
+                                                {{ msg.sources!.length }} fuente{{ msg.sources!.length !== 1 ? 's' : '' }} consultada{{ msg.sources!.length !== 1 ? 's' : '' }}
+                                            </summary>
+                                            <div class="mt-2 flex flex-col gap-2">
+                                                @for (source of msg.sources!; track source.filename + source.chunk_index) {
+                                                    <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10">
+                                                        <p class="text-[11px] font-bold text-primary uppercase tracking-widest mb-1">{{ source.filename }}</p>
+                                                        <p class="text-xs text-on-surface-variant leading-relaxed line-clamp-3">{{ source.excerpt }}</p>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </details>
+                                    }
+
                                     <div
                                         class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none max-w-5xl border border-outline-variant/10"
                                     >

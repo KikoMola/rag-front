@@ -1,0 +1,275 @@
+<!-- Left: Conversation History Sidebar -->
+<aside class="w-64 flex flex-col bg-surface-container overflow-hidden shrink-0">
+    <!-- Header -->
+    <div class="px-4 pt-6 pb-3 flex items-center justify-between">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Historial</p>
+        <button
+            (click)="newConversation()"
+            class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold text-primary hover:bg-surface-container-low transition-colors cursor-pointer"
+            aria-label="Nueva conversación"
+        >
+            <svg [lucideIcon]="LucideMessageSquarePlus" class="size-3.5"></svg>
+            Nueva
+        </button>
+    </div>
+
+    <!-- Conversation List -->
+    @if (loadingConversations()) {
+        <div class="flex items-center justify-center py-8">
+            <svg [lucideIcon]="LucideLoader" class="size-5 text-primary animate-spin"></svg>
+        </div>
+    } @else if (!conversations().length) {
+        <div class="flex flex-col items-center justify-center flex-1 text-center px-4 pb-8">
+            <svg [lucideIcon]="LucideSparkles" class="size-7 text-on-surface-variant/30 mb-3"></svg>
+            <p class="text-xs text-on-surface-variant/50">Sin conversaciones todavía</p>
+        </div>
+    } @else {
+        <ul class="flex flex-col gap-px px-2 overflow-y-auto flex-1 pb-4">
+            @for (conv of conversations(); track conv.id) {
+                <li class="relative group">
+                    <button
+                        (click)="selectConversation(conv)"
+                        class="w-full text-left px-3 py-3 rounded-xl transition-all cursor-pointer"
+                        [class.bg-surface-container-lowest]="conversationId() === conv.id"
+                        [class.shadow-sm]="conversationId() === conv.id"
+                    >
+                        <p
+                            class="text-sm truncate pr-6"
+                            [class.font-semibold]="conversationId() === conv.id"
+                            [class.text-on-surface]="conversationId() === conv.id"
+                            [class.text-on-surface-variant]="conversationId() !== conv.id"
+                        >{{ conv.title }}</p>
+                        <p class="text-[10px] text-on-surface-variant/50 mt-0.5">{{ formatDate(conv.updated_at) }}</p>
+                    </button>
+                    <button
+                        (click)="deleteConversation($event, conv.id)"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-on-surface-variant/40 hover:bg-error/10 hover:text-error transition-all cursor-pointer"
+                        aria-label="Eliminar conversación"
+                    >
+                        <svg [lucideIcon]="LucideTrash2" class="size-3.5"></svg>
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</aside>
+
+<!-- Right: Main Chat -->
+<section class="flex-1 flex flex-col overflow-hidden">
+    <!-- Header -->
+    <div class="px-8 mt-8 mb-2">
+        <h2 class="text-2xl font-black font-headline text-on-surface tracking-tight">Chat General</h2>
+        <p class="text-xs text-on-surface-variant mt-1 font-medium uppercase tracking-widest">
+            Asistente de inteligencia artificial
+        </p>
+    </div>
+
+    <!-- Chat Messages Area -->
+    <div #messagesContainer class="flex-1 overflow-y-auto [scrollbar-gutter:stable] px-8 lg:px-12 py-8">
+        @if (!hasMessages()) {
+            <!-- Empty State -->
+            <div class="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto">
+                <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
+                    <svg [lucideIcon]="LucideSparkles" class="size-10 text-primary"></svg>
+                </div>
+                <h3 class="text-2xl font-bold font-headline text-on-surface mb-3">¿En qué puedo ayudarte?</h3>
+                <p class="text-on-surface-variant text-sm leading-relaxed mb-8">
+                    Hazme cualquier pregunta. Estoy aquí para ayudarte con lo que necesites.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                    <button
+                        (click)="inputValue.set('¿Qué puedes hacer por mí?')"
+                        class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright transition-colors cursor-pointer"
+                    >
+                        <span class="text-primary font-semibold">Capacidades →</span><br />
+                        ¿Qué puedes hacer por mí?
+                    </button>
+                    <button
+                        (click)="inputValue.set('Explícame cómo funciona este sistema')"
+                        class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright transition-colors cursor-pointer"
+                    >
+                        <span class="text-primary font-semibold">Información →</span><br />
+                        ¿Cómo funciona este sistema?
+                    </button>
+                </div>
+            </div>
+        } @else {
+            <!-- Messages -->
+            <div class="space-y-6 max-w-6xl mx-auto">
+                @for (msg of messages(); track $index) {
+                    @if (msg.role === 'user') {
+                        <!-- User Message -->
+                        <div class="flex flex-col items-end">
+                            <div class="bg-primary text-on-primary p-5 rounded-2xl rounded-tr-none max-w-2xl">
+                                <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+                            </div>
+                            <div class="flex items-center gap-2 mt-2">
+                                @if (msg.messageId) {
+                                    <button
+                                        (click)="forkFromMessage(msg.messageId)"
+                                        class="p-1 rounded-lg text-on-surface-variant/30 hover:text-on-surface-variant hover:bg-surface-container transition-all cursor-pointer"
+                                        title="Bifurcar desde aquí"
+                                        aria-label="Bifurcar conversación desde este mensaje"
+                                    >
+                                        <svg [lucideIcon]="LucideGitFork" class="size-3.5"></svg>
+                                    </button>
+                                }
+                                <span class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider">
+                                    Tú • {{ formatTime(msg.timestamp) }}
+                                </span>
+                            </div>
+                        </div>
+                    } @else {
+                        <!-- Assistant Message -->
+                        <div class="flex flex-col items-start">
+                            <!-- Thinking Block -->
+                            @if (msg.thinking) {
+                                <div class="mb-4 w-full max-w-5xl">
+                                    <div class="inline-flex flex-col max-w-full">
+                                        <button
+                                            (click)="toggleThinking($index)"
+                                            class="self-start flex items-center gap-2 px-4 py-2 bg-tertiary-fixed-dim/8 hover:bg-tertiary-fixed-dim/15 transition-colors cursor-pointer rounded-t-2xl group relative z-10"
+                                            [class.rounded-b-2xl]="!isThinkingExpanded($index) && !(msg.streaming && !msg.content)"
+                                        >
+                                            <svg [lucideIcon]="LucideBrain" class="size-4 text-tertiary-fixed-dim"></svg>
+                                            <span class="text-[11px] font-bold uppercase tracking-widest text-tertiary-fixed-dim">
+                                                @if (msg.streaming && !msg.content) {
+                                                    Analizando...
+                                                } @else {
+                                                    Razonamiento
+                                                }
+                                            </span>
+                                            <div class="text-tertiary-fixed-dim/70 group-hover:text-tertiary-fixed-dim transition-colors ml-2">
+                                                @if (msg.streaming && !msg.content) {
+                                                    <svg [lucideIcon]="LucideLoader" class="size-3.5 animate-spin"></svg>
+                                                } @else {
+                                                    <svg
+                                                        [lucideIcon]="LucideChevronDown"
+                                                        class="size-3.5 transition-transform duration-300"
+                                                        [class.rotate-180]="isThinkingExpanded($index)"
+                                                    ></svg>
+                                                }
+                                            </div>
+                                        </button>
+                                        @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
+                                            <div class="bg-tertiary-fixed-dim/4 rounded-b-2xl rounded-tr-2xl p-6 text-sm text-on-surface-variant/90 leading-relaxed max-w-full">
+                                                <div class="prose prose-thinking max-w-none text-on-surface-variant" [innerHTML]="msg.thinking | markdown"></div>
+                                                @if (msg.streaming && !msg.content) {
+                                                    <span class="inline-block w-1.5 h-4 bg-tertiary-fixed-dim/60 animate-pulse ml-1 align-middle"></span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Response Content -->
+                            @if (msg.content || !msg.thinking) {
+                                <div class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none max-w-5xl border border-outline-variant/10">
+                                    <div class="prose" [innerHTML]="msg.content | markdown"></div>
+                                    @if (msg.streaming) {
+                                        <span class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 align-middle"></span>
+                                    }
+                                </div>
+                            }
+
+                            <div class="flex items-center gap-1 mt-2">
+                                <svg [lucideIcon]="LucideSparkles" class="size-3 text-primary-container"></svg>
+                                <span class="text-[10px] text-primary-container font-bold uppercase tracking-widest">
+                                    C.O.R.E. • {{ formatTime(msg.timestamp) }}
+                                </span>
+                                @if (!msg.streaming) {
+                                    <button
+                                        (click)="copyMessage(msg.content, $index)"
+                                        class="ml-1 p-1 rounded-lg text-on-surface-variant/30 hover:text-on-surface-variant hover:bg-surface-container transition-all cursor-pointer"
+                                        [title]="copiedIndex() === $index ? 'Copiado' : 'Copiar respuesta'"
+                                        [attr.aria-label]="copiedIndex() === $index ? 'Copiado' : 'Copiar respuesta'"
+                                    >
+                                        @if (copiedIndex() === $index) {
+                                            <svg [lucideIcon]="LucideCheck" class="size-3.5 text-primary"></svg>
+                                        } @else {
+                                            <svg [lucideIcon]="LucideCopy" class="size-3.5"></svg>
+                                        }
+                                    </button>
+                                    @if (msg.messageId) {
+                                        <button
+                                            (click)="forkFromMessage(msg.messageId)"
+                                            class="p-1 rounded-lg text-on-surface-variant/30 hover:text-on-surface-variant hover:bg-surface-container transition-all cursor-pointer"
+                                            title="Bifurcar desde aquí"
+                                            aria-label="Bifurcar conversación desde este mensaje"
+                                        >
+                                            <svg [lucideIcon]="LucideGitFork" class="size-3.5"></svg>
+                                        </button>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="p-6 pb-8 bg-linear-to-t from-surface-container-low via-surface-container-low to-transparent">
+        <div class="max-w-6xl mx-auto">
+            <!-- Model Selector Cards -->
+            <div class="flex gap-2 mb-3" role="group" aria-label="Seleccionar modelo">
+                @for (m of models; track m.id) {
+                    <button
+                        (click)="selectModel(m)"
+                        class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer active:scale-95"
+                        [class.bg-primary]="selectedModel().id === m.id"
+                        [class.text-on-primary]="selectedModel().id === m.id"
+                        [class.bg-surface-container-lowest]="selectedModel().id !== m.id"
+                        [class.text-on-surface-variant]="selectedModel().id !== m.id"
+                        [attr.aria-pressed]="selectedModel().id === m.id"
+                    >
+                        <span aria-hidden="true">{{ m.emoji }}</span>
+                        <span>{{ m.label }}</span>
+                    </button>
+                }
+            </div>
+
+            <!-- Input -->
+            <div
+                class="bg-surface-container-lowest rounded-2xl shadow-xl shadow-on-surface/5 p-2 border border-outline-variant/20 focus-within:ring-2 focus-within:ring-primary-container/20 transition-all"
+            >
+                <div class="flex items-end gap-2 p-1">
+                    <textarea
+                        class="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm py-3 px-3 resize-none max-h-48 font-body"
+                        placeholder="Escribe tu mensaje..."
+                        rows="1"
+                        [value]="inputValue()"
+                        (input)="inputValue.set($any($event.target).value)"
+                        (keydown)="onKeydown($event)"
+                    ></textarea>
+                    <div class="flex items-center gap-1">
+                        @if (streaming()) {
+                            <button
+                                (click)="stopStream()"
+                                class="bg-error text-on-error h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all cursor-pointer"
+                                aria-label="Detener generación"
+                            >
+                                <svg [lucideIcon]="LucideSquare" class="size-4"></svg>
+                            </button>
+                        } @else {
+                            <button
+                                (click)="sendMessage()"
+                                [disabled]="!inputValue().trim()"
+                                class="bg-primary text-on-primary h-12 w-12 flex items-center justify-center rounded-xl hover:shadow-lg active:scale-95 transition-all disabled:opacity-40 cursor-pointer"
+                                aria-label="Enviar mensaje"
+                            >
+                                <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+            <p class="text-center text-[10px] text-on-surface-variant mt-3 font-medium uppercase tracking-widest opacity-60">
+                Chat general · Las respuestas son generadas por IA
+            </p>
+        </div>
+    </div>
+</section>
+

@@ -5,7 +5,8 @@ import {
     LucideBrain,
     LucideCirclePlus,
     LucideDynamicIcon,
-    LucideFolderOpen
+    LucideFolderOpen,
+    LucideMessageSquare,
 } from '@lucide/angular';
 
 interface NavItem {
@@ -26,6 +27,7 @@ export class Sidebar {
 
     protected readonly navItems = signal<NavItem[]>([
         { label: 'Dashboard', icon: LucideBrain, route: '/' },
+        { label: 'Chat', icon: LucideMessageSquare, route: '/chat' },
         { label: 'Collections', icon: LucideFolderOpen, route: '/collections' }
     ]);
 }

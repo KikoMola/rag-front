@@ -45,7 +45,9 @@
     "@floating-ui/dom": "^1.6.0",
     "@lucide/angular": "^1.7.0",
     "@ng-primitives/mcp": "^0.114.0",
+    "highlight.js": "^11.11.1",
     "marked": "^17.0.5",
+    "marked-highlight": "^2.2.4",
     "ng-primitives": "^0.114.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
@@ -54,7 +56,7 @@
     "@angular/build": "^21.0.0",
     "@angular/cli": "^21.0.0",
     "@angular/compiler-cli": "^21.0.0",
-    "@commitlint/cli": "^20.5.0",
+    "@commitlint/cli": "^20.5.2",
     "@commitlint/config-conventional": "^20.5.0",
     "@tailwindcss/postcss": "^4.1.12",
     "@vitest/coverage-v8": "^4.1.4",
