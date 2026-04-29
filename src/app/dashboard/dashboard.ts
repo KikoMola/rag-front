@@ -18,7 +18,6 @@ import type { DashboardData } from '../core/services/dashboard.service';
     selector: 'app-dashboard',
     imports: [LucideDynamicIcon, RouterLink],
     templateUrl: './dashboard.html',
-    styleUrl: './dashboard.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Dashboard implements OnInit {

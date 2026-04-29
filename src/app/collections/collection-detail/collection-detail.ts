@@ -41,7 +41,6 @@ const FORMAT_ICONS: Record<string, LucideIconInput> = {
     selector: 'app-collection-detail',
     imports: [RouterLink, DecimalPipe, LucideDynamicIcon, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription],
     templateUrl: './collection-detail.html',
-    styleUrl: './collection-detail.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CollectionDetail implements OnInit {
