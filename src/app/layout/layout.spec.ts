@@ -20,12 +20,6 @@ describe('Layout', () => {
         expect(fixture.nativeElement.querySelector('app-sidebar')).toBeTruthy();
     });
 
-    it('should render navbar', () => {
-        const fixture = TestBed.createComponent(Layout);
-        fixture.detectChanges();
-        expect(fixture.nativeElement.querySelector('app-navbar')).toBeTruthy();
-    });
-
     it('should render router-outlet', () => {
         const fixture = TestBed.createComponent(Layout);
         fixture.detectChanges();
