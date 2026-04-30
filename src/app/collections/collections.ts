@@ -25,11 +25,12 @@ import {
 import { CollectionsService } from '../core/services/collections.service';
 import { DashboardService } from '../core/services/dashboard.service';
 import { SearchService } from '../core/services/search.service';
+import { Navbar } from '../layout/navbar/navbar';
 import type { Collection } from '../core/models/collection.model';
 
 @Component({
     selector: 'app-collections',
-    imports: [ReactiveFormsModule, LucideDynamicIcon, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription],
+    imports: [ReactiveFormsModule, LucideDynamicIcon, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription, Navbar],
     templateUrl: './collections.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
