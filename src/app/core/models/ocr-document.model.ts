@@ -6,9 +6,11 @@ export interface OcrDocument {
     filepath: string;
     format: string;
     size_bytes: number;
+    page_count: number;
     status: OcrStatus;
     error_message: string | null;
     markdown_content: string | null;
+    thumbnail_b64: string | null;
     created_at: string;
 }
 

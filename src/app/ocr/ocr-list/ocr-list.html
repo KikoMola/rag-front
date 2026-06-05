@@ -118,6 +118,12 @@
                             <div class="w-14 h-14 rounded-full bg-surface flex items-center justify-center animate-pulse">
                                 <svg [lucideIcon]="LucideScanText" [size]="28" class="text-primary"></svg>
                             </div>
+                        } @else if (doc.thumbnail_b64) {
+                            <img
+                                [src]="doc.thumbnail_b64"
+                                [alt]="doc.filename"
+                                class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-300"
+                            />
                         } @else {
                             <svg
                                 [lucideIcon]="doc.format === 'pdf' ? LucideFileText : LucideFileImage"

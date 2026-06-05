@@ -37,15 +37,23 @@
         <aside class="w-72 shrink-0 flex flex-col gap-4">
 
             <!-- File icon card -->
-            <div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col items-center gap-4">
-                <div class="w-20 h-20 rounded-2xl bg-surface-container-high flex items-center justify-center">
-                    <svg
-                        [lucideIcon]="document()!.format === 'pdf' ? LucideFileText : LucideFileImage"
-                        [size]="36"
-                        class="text-primary/70"
-                    ></svg>
-                </div>
-                <div class="text-center">
+            <div class="bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col">
+                @if (document()!.thumbnail_b64) {
+                    <img
+                        [src]="document()!.thumbnail_b64"
+                        [alt]="document()!.filename"
+                        class="w-full object-cover max-h-64"
+                    />
+                } @else {
+                    <div class="w-full h-40 bg-surface-container-high flex items-center justify-center">
+                        <svg
+                            [lucideIcon]="document()!.format === 'pdf' ? LucideFileText : LucideFileImage"
+                            [size]="36"
+                            class="text-primary/70"
+                        ></svg>
+                    </div>
+                }
+                <div class="p-4 text-center">
                     <h2 class="font-bold text-on-surface font-headline text-sm break-all">{{ document()!.filename }}</h2>
                     <p class="text-xs text-on-surface-variant uppercase tracking-wide mt-1">
                         {{ document()!.format }} · {{ formatBytes(document()!.size_bytes) }}
