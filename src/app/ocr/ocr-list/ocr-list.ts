@@ -23,14 +23,22 @@ import {
     LucideAlertCircle,
     LucideCheckCircle,
     LucideClock,
+    LucideX,
 } from '@lucide/angular';
+import {
+    NgpDialog,
+    NgpDialogDescription,
+    NgpDialogOverlay,
+    NgpDialogTitle,
+    NgpDialogTrigger,
+} from 'ng-primitives/dialog';
 import { Navbar } from '../../layout/navbar/navbar';
 import { OcrService } from '../../core/services/ocr.service';
 import type { OcrDocumentListItem, OcrStatus } from '../../core/models/ocr-document.model';
 
 @Component({
     selector: 'app-ocr-list',
-    imports: [LucideDynamicIcon, Navbar],
+    imports: [LucideDynamicIcon, Navbar, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription],
     templateUrl: './ocr-list.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -45,6 +53,7 @@ export class OcrList implements OnInit {
     protected readonly LucideAlertCircle = LucideAlertCircle;
     protected readonly LucideCheckCircle = LucideCheckCircle;
     protected readonly LucideClock = LucideClock;
+    protected readonly LucideX = LucideX;
 
     private readonly ocrService = inject(OcrService);
     private readonly router = inject(Router);
@@ -55,6 +64,7 @@ export class OcrList implements OnInit {
     loading = signal(true);
     uploading = signal(false);
     deletingId = signal<number | null>(null);
+    pendingDeleteId = signal<number | null>(null);
     error = signal<string | null>(null);
 
     private readonly refresh$ = new Subject<void>();
@@ -101,16 +111,28 @@ export class OcrList implements OnInit {
         this.router.navigate(['/ocr', id]);
     }
 
-    deleteDocument(event: MouseEvent, id: number): void {
+    requestDelete(event: MouseEvent, id: number): void {
         event.stopPropagation();
+        this.pendingDeleteId.set(id);
+    }
+
+    confirmDelete(close: () => void): void {
+        const id = this.pendingDeleteId();
+        if (!id) return;
+        close();
         this.deletingId.set(id);
         this.ocrService
             .deleteDocument(id)
-            .pipe(catchError(() => { this.deletingId.set(null); return of(null); }))
+            .pipe(catchError(() => { this.deletingId.set(null); this.pendingDeleteId.set(null); return of(null); }))
             .subscribe(() => {
                 this.documents.update((prev) => prev.filter((d) => d.id !== id));
                 this.deletingId.set(null);
+                this.pendingDeleteId.set(null);
             });
+    }
+
+    pendingDeleteFilename(): string {
+        return this.documents().find((d) => d.id === this.pendingDeleteId())?.filename ?? '';
     }
 
     formatBytes(bytes: number): string {
