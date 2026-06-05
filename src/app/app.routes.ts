@@ -27,7 +27,15 @@ export const routes: Routes = [
             {
                 path: 'chat',
                 loadComponent: () => import('./chat/chat').then((m) => m.Chat),
-            }
+            },
+            {
+                path: 'ocr',
+                loadComponent: () => import('./ocr/ocr-list/ocr-list').then((m) => m.OcrList),
+            },
+            {
+                path: 'ocr/:id',
+                loadComponent: () => import('./ocr/ocr-detail/ocr-detail').then((m) => m.OcrDetail),
+            },
         ],
     },
 ];
