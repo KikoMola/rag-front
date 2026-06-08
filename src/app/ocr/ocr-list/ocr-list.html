@@ -86,8 +86,8 @@
                     <div class="absolute top-4 right-4 z-10">
                         @switch (doc.status) {
                             @case ('done') {
-                                <span class="flex items-center gap-1 bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant px-2.5 py-1 rounded-full text-xs font-semibold border border-tertiary-fixed-dim/30">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
+                                <span class="flex items-center gap-1 bg-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
                                     Listo
                                 </span>
                             }
@@ -150,6 +150,20 @@
                             {{ formatDate(doc.created_at) }}
                         </span>
 
+                        @if (doc.status === 'done') {
+                            <button
+                                (click)="downloadMarkdown($event, doc.id, doc.filename)"
+                                [disabled]="downloadingId() === doc.id"
+                                aria-label="Descargar markdown"
+                                class="p-1.5 rounded-md text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50 cursor-pointer"
+                            >
+                                @if (downloadingId() === doc.id) {
+                                    <svg [lucideIcon]="LucideLoader" [size]="14" class="animate-spin"></svg>
+                                } @else {
+                                    <svg [lucideIcon]="LucideDownload" [size]="14"></svg>
+                                }
+                            </button>
+                        }
                         <button
                             (click)="requestDelete($event, doc.id)"
                             [ngpDialogTrigger]="confirmDeleteDialog"

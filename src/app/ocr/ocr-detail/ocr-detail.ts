@@ -34,6 +34,7 @@ const POLL_INTERVAL_MS = 3000;
     imports: [RouterLink, LucideDynamicIcon, MarkdownPipe],
     templateUrl: './ocr-detail.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'flex flex-col h-full overflow-hidden' },
 })
 export class OcrDetail implements OnInit, OnDestroy {
     protected readonly LucideAlertCircle = LucideAlertCircle;

@@ -17,6 +17,7 @@ import {
     LucideUpload,
     LucideTrash2,
     LucideLoader,
+    LucideDownload,
     LucideFileImage,
     LucideFileText,
     LucideCalendar,
@@ -54,6 +55,9 @@ export class OcrList implements OnInit {
     protected readonly LucideCheckCircle = LucideCheckCircle;
     protected readonly LucideClock = LucideClock;
     protected readonly LucideX = LucideX;
+    protected readonly LucideDownload = LucideDownload;
+
+    downloadingId = signal<number | null>(null);
 
     private readonly ocrService = inject(OcrService);
     private readonly router = inject(Router);
@@ -143,6 +147,25 @@ export class OcrList implements OnInit {
 
     formatDate(iso: string): string {
         return new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    downloadMarkdown(event: MouseEvent, id: number, filename: string): void {
+        event.stopPropagation();
+        this.downloadingId.set(id);
+        this.ocrService
+            .getDocument(id)
+            .pipe(catchError(() => { this.downloadingId.set(null); return of(null); }))
+            .subscribe((doc) => {
+                this.downloadingId.set(null);
+                if (!doc?.markdown_content) return;
+                const blob = new Blob([doc.markdown_content], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename.replace(/\.[^.]+$/, '') + '.md';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
     }
 
     statusLabel(status: OcrStatus): string {
