@@ -14,9 +14,11 @@ const mockDoc: OcrDocument = {
     filepath: 'data/ocr_uploads/factura.jpg',
     format: 'jpg',
     size_bytes: 20480,
+    page_count: 1,
     status: 'done',
     error_message: null,
     markdown_content: '# Factura\n\nTotal: 100€',
+    thumbnail_b64: null,
     created_at: '2026-01-10T10:00:00Z',
 };
 

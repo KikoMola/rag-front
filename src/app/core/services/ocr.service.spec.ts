@@ -7,7 +7,7 @@ import type { OcrDocument, OcrDocumentListItem } from '../models/ocr-document.mo
 const API_BASE = 'http://localhost:8000/api/ocr';
 
 const mockList: OcrDocumentListItem[] = [
-    { id: 1, filename: 'doc.jpg', filepath: 'data/ocr_uploads/doc.jpg', format: 'jpg', size_bytes: 12345, status: 'done', error_message: null, created_at: '2026-01-01T10:00:00Z' },
+    { id: 1, filename: 'doc.jpg', filepath: 'data/ocr_uploads/doc.jpg', format: 'jpg', size_bytes: 12345, page_count: 1, status: 'done', error_message: null, thumbnail_b64: null, created_at: '2026-01-01T10:00:00Z' },
 ];
 
 const mockDoc: OcrDocument = { ...mockList[0], markdown_content: '# Hello\n\nWorld' };
@@ -60,6 +60,6 @@ describe('OcrService', () => {
         const req = httpTesting.expectOne(`${API_BASE}/documents/1`);
         expect(req.request.method).toBe('DELETE');
         req.flush(null);
-        expect(completed).toBeTrue();
+        expect(completed).toBe(true);
     });
 });
