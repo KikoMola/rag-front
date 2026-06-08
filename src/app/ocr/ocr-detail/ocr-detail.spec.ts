@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { RouterModule, ActivatedRoute, convertToParamMap } from '@angular/router';
@@ -42,28 +42,30 @@ describe('OcrDetail', () => {
 
     afterEach(() => httpTesting.verify());
 
-    it('should display document filename when loaded', fakeAsync(() => {
+    it('should display document filename when loaded', async () => {
         const fixture = TestBed.createComponent(OcrDetail);
         fixture.detectChanges();
 
         const req = httpTesting.expectOne(`${API_BASE}/documents/1`);
         req.flush(mockDoc);
-        tick();
+
+        await fixture.whenStable();
         fixture.detectChanges();
 
         expect(fixture.nativeElement.textContent).toContain('factura.jpg');
-    }));
+    });
 
-    it('should render markdown content when status is done', fakeAsync(() => {
+    it('should render markdown content when status is done', async () => {
         const fixture = TestBed.createComponent(OcrDetail);
         fixture.detectChanges();
 
         const req = httpTesting.expectOne(`${API_BASE}/documents/1`);
         req.flush(mockDoc);
-        tick();
+
+        await fixture.whenStable();
         fixture.detectChanges();
 
         const prose = fixture.nativeElement.querySelector('.prose');
         expect(prose).toBeTruthy();
-    }));
+    });
 });
