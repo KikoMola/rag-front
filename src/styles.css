@@ -311,6 +311,12 @@ body {
     display: none;
 }
 
+/* ─── Pestañas (ng-primitives/tabs) ─────────────────────────────────── */
+
+[ngpTabPanel]:not([data-active]) {
+    display: none;
+}
+
 /* ─── Barra de progreso indeterminada ───────────────────────────────── */
 
 .indeterminate-bar {

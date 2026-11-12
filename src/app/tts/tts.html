@@ -1,5 +1,13 @@
-<div class="flex flex-col gap-8 px-6 py-8 lg:px-10 pb-24">
-    <app-page-header title="Audio" subtitle="Convierte un documento o un texto en un MP3 para escucharlo.">
+<div class="flex flex-col gap-6 px-6 py-8 lg:px-10 pb-24 max-w-6xl">
+    <app-page-header title="Audio">
+        <span pageSubtitle>
+            @if (audios().length) {
+                {{ audios().length }} {{ audios().length === 1 ? 'audio' : 'audios' }} ·
+                {{ totalMinutes() }} min en total
+            } @else {
+                Convierte un documento o un texto en un MP3 para escucharlo.
+            }
+        </span>
         <button pageActions appButton [ngpDialogTrigger]="createAudioDialog" (click)="openCreateForm()">
             <svg [lucideIcon]="LucideCirclePlus" [size]="16"></svg>
             Nuevo audio
@@ -28,140 +36,136 @@
             </button>
         </div>
     } @else {
-        <div class="flex flex-col gap-4 w-full max-w-4xl">
+        <section
+            class="bg-surface-container-lowest rounded-xl ring-1 ring-outline-variant/30 divide-y divide-outline-variant/30"
+            aria-label="Audios"
+        >
             @for (audio of audios(); track audio.id) {
-                <article class="bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-4">
-                    <div class="flex items-start gap-4">
-                        <div
-                            class="w-11 h-11 shrink-0 rounded-lg bg-surface-container-low flex items-center justify-center"
+                <article
+                    class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3"
+                    [class.bg-primary/5]="player.isCurrent(audio.id)"
+                >
+                    <!-- Reproducir / estado -->
+                    @if (audio.status === 'done') {
+                        <button
+                            appButton
+                            [variant]="player.isCurrent(audio.id) ? 'primary' : 'secondary'"
+                            size="icon"
+                            class="rounded-full"
+                            (click)="play(audio)"
+                            [attr.aria-label]="(isPlaying(audio) ? 'Pausar ' : 'Reproducir ') + audio.title"
                         >
+                            <svg [lucideIcon]="isPlaying(audio) ? LucidePause : LucidePlay" class="size-4"></svg>
+                        </button>
+                    } @else {
+                        <span
+                            class="size-10 shrink-0 rounded-full grid place-items-center bg-surface-container-high text-on-surface-variant"
+                            [class.!bg-error-container]="audio.status === 'error'"
+                            [class.!text-on-error-container]="audio.status === 'error'"
+                            aria-hidden="true"
+                        >
+                            @switch (audio.status) {
+                                @case ('processing') {
+                                    <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
+                                }
+                                @case ('pending') {
+                                    <svg [lucideIcon]="LucideClock" class="size-4"></svg>
+                                }
+                                @default {
+                                    <svg [lucideIcon]="LucideAlertCircle" class="size-4"></svg>
+                                }
+                            }
+                        </span>
+                    }
+
+                    <!-- Título y origen -->
+                    <div class="flex-1 min-w-48">
+                        <h3 class="font-semibold text-on-surface text-sm truncate">{{ audio.title }}</h3>
+                        <p class="text-xs text-on-surface-variant truncate flex items-center gap-1">
                             <svg
                                 [lucideIcon]="audio.source_type === 'text' ? LucideType : LucideFileText"
-                                [size]="20"
-                                class="text-primary"
+                                class="size-3.5 shrink-0"
                             ></svg>
-                        </div>
-
-                        <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-on-surface text-sm font-headline truncate">{{ audio.title }}</h3>
-                            <p class="text-xs text-on-surface-variant mt-0.5">
-                                Voz {{ voiceName(audio.voice) }} · {{ audio.speed }}×
-                                @if (audio.status === 'done') {
-                                    · {{ formatDuration(audio.duration_seconds) }} · {{ formatBytes(audio.size_bytes) }}
-                                }
-                            </p>
-                        </div>
-
-                        @switch (audio.status) {
-                            @case ('done') {
-                                <span
-                                    class="flex items-center gap-1 bg-emerald-600 text-white px-2.5 py-1 rounded-full text-xs font-semibold"
-                                >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
-                                    Listo
-                                </span>
-                            }
-                            @case ('processing') {
-                                <span
-                                    class="flex items-center gap-1 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full text-xs font-semibold"
-                                >
-                                    <svg [lucideIcon]="LucideLoader" [size]="12" class="animate-spin"></svg>
-                                    Generando {{ audio.progress }}%
-                                </span>
-                            }
-                            @case ('pending') {
-                                <span
-                                    class="flex items-center gap-1 bg-surface-container text-on-surface-variant px-2.5 py-1 rounded-full text-xs font-semibold"
-                                >
-                                    <svg [lucideIcon]="LucideClock" [size]="12"></svg>
-                                    En cola
-                                </span>
-                            }
-                            @case ('error') {
-                                <span
-                                    class="flex items-center gap-1 bg-error-container text-on-error-container px-2.5 py-1 rounded-full text-xs font-semibold"
-                                >
-                                    <svg [lucideIcon]="LucideAlertCircle" [size]="12"></svg>
-                                    Error
-                                </span>
-                            }
-                        }
+                            {{ audio.source_name ?? 'Texto pegado' }} · {{ formatDate(audio.created_at) }}
+                        </p>
                     </div>
 
-                    @if (audio.status === 'processing' || audio.status === 'pending') {
-                        <div
-                            class="h-1.5 w-full rounded-full bg-surface-container-high overflow-hidden"
-                            role="progressbar"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            [attr.aria-valuenow]="audio.progress"
-                            [attr.aria-label]="'Progreso de ' + audio.title"
-                        >
-                            <div
-                                class="h-full bg-primary rounded-full transition-all duration-500"
-                                [style.width.%]="audio.progress"
-                            ></div>
-                        </div>
-                    }
-
-                    @if (audio.status === 'done') {
-                        <audio
-                            controls
-                            preload="none"
-                            class="w-full h-10"
-                            [src]="fileUrl(audio.id)"
-                            [attr.aria-label]="'Reproducir ' + audio.title"
-                        ></audio>
-                    }
-
-                    @if (audio.status === 'error' && audio.error_message) {
-                        <p class="text-sm text-on-error-container bg-error-container rounded-lg px-3 py-2">
-                            {{ audio.error_message }}
-                        </p>
-                    }
-
-                    <div class="flex items-center justify-between text-xs text-on-surface-variant">
-                        <span class="flex items-center gap-1">
-                            <svg [lucideIcon]="LucideCalendar" [size]="12"></svg>
-                            {{ formatDate(audio.created_at) }}
-                        </span>
-
-                        <div class="flex items-center gap-1">
-                            @if (audio.status === 'done') {
-                                <a
-                                    appButton
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    [href]="fileUrl(audio.id, true)"
-                                    ngpTooltipTrigger
-                                    aria-label="Descargar MP3"
+                    <!-- Detalle según el estado -->
+                    @switch (audio.status) {
+                        @case ('done') {
+                            <span class="text-sm text-on-surface-variant tabular-nums">
+                                {{ voiceName(audio.voice) }} · {{ audio.speed }}× ·
+                                {{ formatDuration(audio.duration_seconds) }}
+                            </span>
+                        }
+                        @case ('error') {
+                            <p class="basis-full sm:basis-auto text-sm text-error max-w-md">
+                                {{ audio.error_message ?? 'No se pudo generar el audio.' }}
+                            </p>
+                        }
+                        @default {
+                            <div class="flex flex-col gap-1 w-full sm:w-64">
+                                <div class="flex justify-between text-xs text-on-surface-variant tabular-nums">
+                                    <span>
+                                        @if (audio.status === 'pending') {
+                                            En cola
+                                        } @else {
+                                            Generando {{ audio.progress }}%
+                                        }
+                                    </span>
+                                    <span>{{ remainingLabel(audio) }}</span>
+                                </div>
+                                <div
+                                    class="h-1.5 w-full rounded-full bg-surface-container-high overflow-hidden"
+                                    role="progressbar"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                    [attr.aria-valuenow]="audio.progress"
+                                    [attr.aria-label]="'Progreso de ' + audio.title"
                                 >
-                                    <span class="sr-only">Descargar MP3</span>
-                                    <svg [lucideIcon]="LucideDownload" [size]="16"></svg>
+                                    <div
+                                        class="h-full bg-primary rounded-full transition-all duration-500"
+                                        [style.width.%]="audio.progress"
+                                    ></div>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    <!-- Acciones -->
+                    <button
+                        appButton
+                        variant="ghost"
+                        size="icon-sm"
+                        [ngpMenuTrigger]="audioMenu"
+                        ngpMenuTriggerPlacement="bottom-end"
+                        [disabled]="deletingId() === audio.id"
+                        [attr.aria-label]="'Más acciones para ' + audio.title"
+                    >
+                        @if (deletingId() === audio.id) {
+                            <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
+                        } @else {
+                            <svg [lucideIcon]="LucideEllipsis" class="size-4"></svg>
+                        }
+                    </button>
+                    <ng-template #audioMenu>
+                        <div ngpMenu>
+                            @if (audio.status === 'done') {
+                                <a ngpMenuItem [href]="fileUrl(audio.id, true)">
+                                    <svg [lucideIcon]="LucideDownload" class="size-4"></svg>
+                                    Descargar MP3 · {{ formatBytes(audio.size_bytes) }}
                                 </a>
+                                <div class="menu-separator" role="separator"></div>
                             }
-                            <button
-                                appButton
-                                variant="ghost-danger"
-                                size="icon-sm"
-                                (click)="requestDelete(audio.id)"
-                                [ngpDialogTrigger]="confirmDeleteDialog"
-                                ngpTooltipTrigger
-                                [disabled]="deletingId() === audio.id"
-                                aria-label="Eliminar audio"
-                            >
-                                <span class="sr-only">Eliminar</span>
-                                @if (deletingId() === audio.id) {
-                                    <svg [lucideIcon]="LucideLoader" [size]="16" class="animate-spin"></svg>
-                                } @else {
-                                    <svg [lucideIcon]="LucideTrash2" [size]="16"></svg>
-                                }
+                            <button ngpMenuItem class="danger" (click)="askDelete(audio.id)">
+                                <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
+                                {{ audio.status === 'processing' ? 'Cancelar y eliminar' : 'Eliminar audio' }}
                             </button>
                         </div>
-                    </div>
+                    </ng-template>
                 </article>
             }
-        </div>
+        </section>
     }
 </div>
 

@@ -20,6 +20,9 @@
     <div class="flex-1 overflow-y-auto">
         <router-outlet />
     </div>
+
+    <!-- Reproductor de audio: sigue sonando al cambiar de pantalla -->
+    <app-player-bar class="shrink-0" />
 </main>
 
 <ng-template #mobileNav let-close="close">

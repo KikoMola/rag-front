@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    ElementRef,
+    OnInit,
+    Type,
+    ViewContainerRef,
+    computed,
+    inject,
+    signal,
+    viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -6,14 +17,16 @@ import { EMPTY, interval } from 'rxjs';
 import { catchError, filter, switchMap } from 'rxjs/operators';
 import {
     LucideAlertCircle,
-    LucideCalendar,
     LucideCirclePlus,
     LucideClock,
     LucideDownload,
     LucideDynamicIcon,
+    LucideEllipsis,
     LucideFileText,
     LucideHeadphones,
     LucideLoader,
+    LucidePause,
+    LucidePlay,
     LucideTrash2,
     LucideType,
     LucideUpload,
@@ -22,11 +35,13 @@ import {
 import {
     NgpDialog,
     NgpDialogDescription,
+    NgpDialogManager,
     NgpDialogOverlay,
     NgpDialogTitle,
     NgpDialogTrigger,
 } from 'ng-primitives/dialog';
-import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
+import { NgpMenu, NgpMenuItem, NgpMenuTrigger } from 'ng-primitives/menu';
+import { AudioPlayerService } from '../core/services/audio-player.service';
 import { TtsService } from '../core/services/tts.service';
 import type { TtsAudioListItem, TtsVoice } from '../core/models/tts-audio.model';
 import { AppButton } from '../shared/ui/button';
@@ -43,6 +58,15 @@ interface VoiceGroup {
     voices: TtsVoice[];
 }
 
+/** Tipo de plantilla que acepta NgpDialogManager.open (el contexto no se exporta). */
+type DialogTemplate = Exclude<Parameters<NgpDialogManager['open']>[0], Type<unknown>>;
+
+/** Primer progreso observado de un audio, para estimar cuánto le queda. */
+interface ProgressSample {
+    at: number;
+    progress: number;
+}
+
 @Component({
     selector: 'app-tts',
     imports: [
@@ -53,7 +77,9 @@ interface VoiceGroup {
         NgpDialogOverlay,
         NgpDialogTitle,
         NgpDialogDescription,
-        NgpTooltipTrigger,
+        NgpMenu,
+        NgpMenuItem,
+        NgpMenuTrigger,
         AppButton,
         PageHeader,
     ],
@@ -62,7 +88,9 @@ interface VoiceGroup {
 })
 export class Tts implements OnInit {
     protected readonly LucideAlertCircle = LucideAlertCircle;
-    protected readonly LucideCalendar = LucideCalendar;
+    protected readonly LucideEllipsis = LucideEllipsis;
+    protected readonly LucidePause = LucidePause;
+    protected readonly LucidePlay = LucidePlay;
     protected readonly LucideCirclePlus = LucideCirclePlus;
     protected readonly LucideClock = LucideClock;
     protected readonly LucideDownload = LucideDownload;
@@ -80,6 +108,12 @@ export class Tts implements OnInit {
     private readonly ttsService = inject(TtsService);
     private readonly fb = inject(FormBuilder);
     private readonly toast = inject(ToastService);
+    private readonly dialogs = inject(NgpDialogManager);
+    private readonly viewContainerRef = inject(ViewContainerRef);
+    protected readonly player = inject(AudioPlayerService);
+
+    private readonly confirmDeleteDialog = viewChild.required<DialogTemplate>('confirmDeleteDialog');
+    private readonly progressSamples = new Map<number, ProgressSample>();
 
     readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
@@ -105,6 +139,9 @@ export class Tts implements OnInit {
     isPdf = computed(() => this.selectedFile()?.name.toLowerCase().endsWith('.pdf') ?? false);
     hasActiveJobs = computed(() => this.audios().some((a) => a.status === 'pending' || a.status === 'processing'));
     pendingDeleteTitle = computed(() => this.audios().find((a) => a.id === this.pendingDeleteId())?.title ?? '');
+    totalMinutes = computed(() =>
+        Math.round(this.audios().reduce((sum, a) => sum + (a.status === 'done' ? (a.duration_seconds ?? 0) : 0), 0) / 60),
+    );
 
     createForm = this.fb.nonNullable.group({
         title: [''],
@@ -123,13 +160,55 @@ export class Tts implements OnInit {
                 switchMap(() => this.ttsService.getAudios().pipe(catchError(() => EMPTY))),
                 takeUntilDestroyed(),
             )
-            .subscribe((audios) => this.audios.set(audios));
+            .subscribe((audios) => this.setAudios(audios));
+    }
+
+    /** Guarda la lista y anota el primer progreso de cada audio en curso. */
+    private setAudios(audios: TtsAudioListItem[], now = Date.now()): void {
+        for (const audio of audios) {
+            if (audio.status === 'processing' && !this.progressSamples.has(audio.id)) {
+                this.progressSamples.set(audio.id, { at: now, progress: audio.progress });
+            }
+        }
+        this.audios.set(audios);
+    }
+
+    /** «quedan unos N min», en cuanto hay avance suficiente para estimarlo. */
+    remainingLabel(audio: TtsAudioListItem, now = Date.now()): string | null {
+        const sample = this.progressSamples.get(audio.id);
+        if (audio.status !== 'processing' || !sample) return null;
+        const gained = audio.progress - sample.progress;
+        const elapsed = now - sample.at;
+        if (gained < 2 || elapsed <= 0) return null;
+        const remainingMs = ((100 - audio.progress) / gained) * elapsed;
+        const minutes = Math.round(remainingMs / 60_000);
+        return minutes < 1 ? 'menos de un minuto' : `quedan unos ${minutes} min`;
+    }
+
+    play(audio: TtsAudioListItem): void {
+        this.player.play({
+            id: audio.id,
+            title: audio.title,
+            subtitle: `Voz ${this.voiceName(audio.voice)}`,
+            src: this.fileUrl(audio.id),
+        });
+    }
+
+    isPlaying(audio: TtsAudioListItem): boolean {
+        return this.player.isCurrent(audio.id) && this.player.playing();
+    }
+
+    /** Abre la confirmación de borrado desde el menú de acciones. */
+    askDelete(id: number): void {
+        this.pendingDeleteId.set(id);
+        // Se abre tras cerrarse el menú; si no, el mismo clic cierra el diálogo
+        setTimeout(() => this.dialogs.open(this.confirmDeleteDialog(), { viewContainerRef: this.viewContainerRef }));
     }
 
     ngOnInit(): void {
         this.ttsService.getAudios().subscribe({
             next: (audios) => {
-                this.audios.set(audios);
+                this.setAudios(audios);
                 this.loading.set(false);
             },
             error: () => {
@@ -230,6 +309,7 @@ export class Tts implements OnInit {
         this.ttsService.deleteAudio(id).subscribe({
             next: () => {
                 this.audios.update((list) => list.filter((a) => a.id !== id));
+                this.player.forget(id);
                 this.deletingId.set(null);
                 this.pendingDeleteId.set(null);
                 this.toast.success('Audio eliminado.');

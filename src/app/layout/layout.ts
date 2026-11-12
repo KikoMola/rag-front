@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { LucideDynamicIcon, LucideMenu } from '@lucide/angular';
 import { NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogTrigger } from 'ng-primitives/dialog';
 import { AppButton } from '../shared/ui/button';
+import { PlayerBar } from './player-bar/player-bar';
 import { Sidebar } from './sidebar/sidebar';
 
 @Component({
@@ -10,6 +11,7 @@ import { Sidebar } from './sidebar/sidebar';
     imports: [
         RouterOutlet,
         Sidebar,
+        PlayerBar,
         LucideDynamicIcon,
         AppButton,
         NgpDialog,

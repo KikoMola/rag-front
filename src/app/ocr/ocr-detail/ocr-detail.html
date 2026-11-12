@@ -22,12 +22,80 @@
             }
         </span>
         @if (document()!.status === 'done') {
-            <button pageActions appButton variant="secondary" (click)="copyMarkdown()">
-                <svg [lucideIcon]="copySuccess() ? LucideCheckCircle : LucideCopy" class="size-4"></svg>
-                {{ copySuccess() ? 'Copiado' : 'Copiar texto' }}
-            </button>
+            <ng-container pageActions>
+                <button appButton variant="secondary" (click)="copyMarkdown()">
+                    <svg [lucideIcon]="copySuccess() ? LucideCheckCircle : LucideCopy" class="size-4"></svg>
+                    {{ copySuccess() ? 'Copiado' : 'Copiar texto' }}
+                </button>
+                <button appButton variant="secondary" [disabled]="generatingAudio()" (click)="generateAudio()">
+                    @if (generatingAudio()) {
+                        <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
+                    } @else {
+                        <svg [lucideIcon]="LucideHeadphones" class="size-4"></svg>
+                    }
+                    Generar audio
+                </button>
+                <button appButton [ngpDialogTrigger]="addToCollectionDialog" (click)="loadCollections()">
+                    <svg [lucideIcon]="LucideFolderPlus" class="size-4"></svg>
+                    Añadir a colección
+                </button>
+            </ng-container>
         }
     </app-page-header>
+
+    <ng-template #addToCollectionDialog let-close="close">
+        <div ngpDialogOverlay class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+            <div ngpDialog class="bg-surface-container-lowest rounded-2xl p-6 shadow-2xl w-full max-w-md mx-4">
+                <div class="flex items-center justify-between mb-1">
+                    <h2 ngpDialogTitle class="text-lg font-bold font-headline text-on-surface">Añadir a colección</h2>
+                    <button appButton variant="ghost" size="icon-sm" (click)="close()" aria-label="Cerrar">
+                        <svg [lucideIcon]="LucideX" class="size-5"></svg>
+                    </button>
+                </div>
+                <p ngpDialogDescription class="text-sm text-on-surface-variant mb-4">
+                    El texto extraído se guarda como un documento Markdown y se indexa para poder preguntarle.
+                </p>
+                @if (collections() === null) {
+                    <div class="flex items-center justify-center py-8">
+                        <svg [lucideIcon]="LucideLoader" class="size-6 text-primary animate-spin"></svg>
+                    </div>
+                } @else if (!collections()!.length) {
+                    <p class="text-sm text-on-surface-variant py-4">
+                        No hay colecciones.
+                        <a routerLink="/collections" class="text-primary font-semibold" (click)="close()">Crea una</a>
+                        primero.
+                    </p>
+                } @else {
+                    <ul class="flex flex-col gap-1 max-h-72 overflow-y-auto">
+                        @for (collection of collections(); track collection.id) {
+                            <li>
+                                <button
+                                    (click)="addToCollection(collection, close)"
+                                    [disabled]="addingTo() !== null"
+                                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-surface-container-high cursor-pointer disabled:opacity-60 disabled:cursor-default outline-none focus-visible:outline-2 focus-visible:outline-surface-tint"
+                                >
+                                    @if (addingTo() === collection.id) {
+                                        <svg [lucideIcon]="LucideLoader" class="size-4 text-primary animate-spin"></svg>
+                                    } @else {
+                                        <svg [lucideIcon]="LucideFolderOpen" class="size-4 text-primary"></svg>
+                                    }
+                                    <span class="flex-1 min-w-0">
+                                        <span class="block text-sm font-medium text-on-surface truncate">{{
+                                            collection.name
+                                        }}</span>
+                                        <span class="block text-xs text-on-surface-variant">
+                                            {{ collection.document_count }}
+                                            {{ collection.document_count === 1 ? 'documento' : 'documentos' }}
+                                        </span>
+                                    </span>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </ng-template>
 
     <div class="flex-1 flex overflow-hidden gap-6 px-6 lg:px-10 pb-6">
         <!-- Left: file and status -->
@@ -97,21 +165,48 @@
 
         <!-- Right: extracted text -->
         <section
+            ngpTabset
+            ngpTabsetValue="preview"
             class="flex-1 min-w-0 bg-surface-container-lowest rounded-xl flex flex-col overflow-hidden"
             aria-label="Texto extraído"
         >
-            <div class="flex items-center gap-2 px-6 py-4 border-b border-surface-container shrink-0">
+            <div class="flex items-center gap-2 px-6 py-3 border-b border-surface-container shrink-0">
                 <svg [lucideIcon]="LucideScanText" [size]="16" class="text-primary"></svg>
                 <h2 class="font-bold text-on-surface font-headline text-sm">Texto extraído</h2>
+                @if (document()!.status === 'done') {
+                    <div ngpTabList class="ml-auto flex gap-0.5 p-0.5 rounded-lg bg-surface-container-high">
+                        <button
+                            ngpTabButton
+                            ngpTabButtonValue="preview"
+                            class="h-8 px-3 rounded-md text-sm font-medium text-on-surface-variant cursor-pointer outline-none data-[active]:bg-surface-container-lowest data-[active]:text-primary data-[active]:shadow-sm focus-visible:outline-2 focus-visible:outline-surface-tint"
+                        >
+                            Vista previa
+                        </button>
+                        <button
+                            ngpTabButton
+                            ngpTabButtonValue="markdown"
+                            class="h-8 px-3 rounded-md text-sm font-medium text-on-surface-variant cursor-pointer outline-none data-[active]:bg-surface-container-lowest data-[active]:text-primary data-[active]:shadow-sm focus-visible:outline-2 focus-visible:outline-surface-tint"
+                        >
+                            Markdown
+                        </button>
+                    </div>
+                }
             </div>
 
             <div class="flex-1 overflow-y-auto p-6">
                 @switch (document()!.status) {
                     @case ('done') {
-                        <div
-                            class="prose prose-sm max-w-none text-on-surface leading-relaxed"
-                            [innerHTML]="document()!.markdown_content | markdown"
-                        ></div>
+                        <div ngpTabPanel ngpTabPanelValue="preview">
+                            <div
+                                class="prose max-w-prose text-on-surface"
+                                [innerHTML]="document()!.markdown_content | markdown"
+                            ></div>
+                        </div>
+                        <div ngpTabPanel ngpTabPanelValue="markdown">
+                            <pre
+                                class="text-sm leading-relaxed font-mono whitespace-pre-wrap break-words text-on-surface"
+                            >{{ document()!.markdown_content }}</pre>
+                        </div>
                     }
                     @case ('processing') {
                         <div
