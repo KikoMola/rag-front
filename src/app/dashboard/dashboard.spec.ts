@@ -1,22 +1,50 @@
 import { TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { RouterModule, Router } from '@angular/router';
 import { Dashboard } from './dashboard';
 import type { DashboardData } from '../core/services/dashboard.service';
+import type { Collection } from '../core/models/collection.model';
+import type { ConversationListItem } from '../core/models/conversation.model';
+import type { TtsAudioListItem } from '../core/models/tts-audio.model';
+import { AudioPlayerService } from '../core/services/audio-player.service';
 
-const API_BASE = 'http://localhost:8000/api';
+const API = 'http://localhost:8000/api';
 
 const mockDashboardData: DashboardData = {
     stats: { total_documents: 15, total_collections: 3, models: ['gpt-4', 'llama-3'] },
     recent_documents: [
-        { id: 1, filename: 'doc.pdf', collection_name: 'Test', status: 'indexed', created_at: '2026-01-15T10:00:00Z' },
-        { id: 2, filename: 'err.txt', collection_name: 'Test', status: 'error', created_at: '2026-01-14T10:00:00Z' },
-        { id: 3, filename: 'wait.md', collection_name: 'Test', status: 'pending', created_at: '2026-01-13T10:00:00Z' },
+        { id: 1, filename: 'doc.pdf', collection_name: 'Test Collection', status: 'indexed', created_at: '2026-01-15T10:00:00Z' },
+        { id: 2, filename: 'err.txt', collection_name: 'Test Collection', status: 'error', created_at: '2026-01-14T10:00:00Z' },
     ],
-    recent_collections: [
-        { id: 1, name: 'Test Collection', document_count: 5, created_at: '2026-01-10T10:00:00Z' },
-    ],
+    recent_collections: [{ id: 1, name: 'Test Collection', document_count: 5, created_at: '2026-01-10T10:00:00Z' }],
+};
+
+const mockCollections: Collection[] = [
+    { id: 1, name: 'Test Collection', description: null, created_at: '2026-01-10', document_count: 5 },
+    { id: 2, name: 'Vacía', description: null, created_at: '2026-01-11', document_count: 0 },
+];
+
+const mockConversations: ConversationListItem[] = [
+    { id: 7, title: 'Antigua', mode: 'general', forked_from_id: null, created_at: '2026-01-01', updated_at: '2026-01-01' },
+    { id: 8, title: 'Reciente', mode: 'general', forked_from_id: null, created_at: '2026-01-05', updated_at: '2026-01-05' },
+];
+
+const doneAudio: TtsAudioListItem = {
+    id: 3,
+    title: 'Tema 1',
+    source_type: 'file',
+    source_name: 'tema1.pdf',
+    voice: 'ef_dora',
+    speed: 1,
+    status: 'done',
+    progress: 100,
+    char_count: 100,
+    duration_seconds: 60,
+    size_bytes: 1000,
+    error_message: null,
+    created_at: '2026-01-05',
 };
 
 describe('Dashboard', () => {
@@ -30,173 +58,148 @@ describe('Dashboard', () => {
         httpTesting = TestBed.inject(HttpTestingController);
     });
 
-    afterEach(() => {
-        httpTesting.verify();
-    });
+    afterEach(() => httpTesting.verify());
 
-    it('should create', () => {
+    function init(
+        options: { dashboard?: DashboardData | 'error'; audios?: TtsAudioListItem[] } = {},
+    ): ComponentFixture<Dashboard> {
         const fixture = TestBed.createComponent(Dashboard);
         fixture.detectChanges();
-        expect(fixture.componentInstance).toBeTruthy();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-    });
+        const dashboardReq = httpTesting.expectOne(`${API}/dashboard`);
+        if (options.dashboard === 'error') dashboardReq.error(new ProgressEvent('error'));
+        else dashboardReq.flush(options.dashboard ?? mockDashboardData);
+        httpTesting.expectOne(`${API}/knowledge/collections`).flush(mockCollections);
+        httpTesting.expectOne(`${API}/chat/conversations`).flush(mockConversations);
+        httpTesting.expectOne(`${API}/tts/audios`).flush(options.audios ?? [doneAudio]);
+        fixture.detectChanges();
+        return fixture;
+    }
 
-    it('should show loading skeleton initially', () => {
+    it('should show a loading skeleton until the summary arrives', () => {
         const fixture = TestBed.createComponent(Dashboard);
         fixture.detectChanges();
         expect(fixture.componentInstance['loading']()).toBe(true);
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-    });
-
-    it('should load dashboard data on init', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-
-        const req = httpTesting.expectOne(`${API_BASE}/dashboard`);
-        req.flush(mockDashboardData);
-        fixture.detectChanges();
-
+        httpTesting.expectOne(`${API}/dashboard`).flush(mockDashboardData);
+        httpTesting.expectOne(`${API}/knowledge/collections`).flush([]);
+        httpTesting.expectOne(`${API}/chat/conversations`).flush([]);
+        httpTesting.expectOne(`${API}/tts/audios`).flush([]);
         expect(fixture.componentInstance['loading']()).toBe(false);
-        expect(fixture.componentInstance['data']()).toEqual(mockDashboardData);
     });
 
-    it('should handle loading error', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-
-        const req = httpTesting.expectOne(`${API_BASE}/dashboard`);
-        req.error(new ProgressEvent('error'));
-        fixture.detectChanges();
-
-        expect(fixture.componentInstance['loading']()).toBe(false);
-        expect(fixture.componentInstance['data']()).toBeNull();
+    it('should explain the error when the backend does not answer', () => {
+        const fixture = init({ dashboard: 'error' });
+        expect(fixture.nativeElement.textContent).toContain('No se pudo cargar el resumen');
     });
 
-    it('should navigate to collection on openCollection', () => {
+    it('should summarise counts and list the models in a popover', () => {
+        const fixture = init();
+        const text = fixture.nativeElement.textContent;
+        expect(text).toContain('3 colecciones');
+        expect(text).toContain('15 documentos');
+        expect(text).toContain('2 modelos disponibles');
+    });
+
+    it('should only offer collections with documents as question targets', () => {
+        const fixture = init();
+        const options = fixture.componentInstance['targetOptions']();
+        expect(options.map((o) => o.label)).toEqual(['Chat general', 'Test Collection']);
+        expect(options[1]).toEqual(
+            expect.objectContaining({ value: '1', description: '5 documentos', group: 'Colecciones' }),
+        );
+        expect(fixture.nativeElement.querySelector('[role="combobox"]').textContent).toContain('Chat general');
+    });
+
+    it('should send the question to the general chat by default', () => {
         const router = TestBed.inject(Router);
-        vi.spyOn(router, 'navigate');
-
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-
-        fixture.componentInstance['openCollection'](5);
-        expect(router.navigate).toHaveBeenCalledWith(['/collections', 5]);
-    });
-
-    it('should format date correctly', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-
-        const result = fixture.componentInstance['formatDate']('2026-03-15T10:00:00Z');
-        expect(result).toBeTruthy();
-        expect(typeof result).toBe('string');
-    });
-
-    it('should return correct status icon for indexed', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-
+        const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+        const fixture = init();
         const component = fixture.componentInstance;
-        expect(component['statusIcon']('indexed')).toBe(component['LucideCheckCircle2']);
+
+        component['question'].set('  ');
+        component['ask']();
+        expect(navigate).not.toHaveBeenCalled();
+
+        component['question'].set('¿Qué es un percentil?');
+        component['ask']();
+        expect(navigate).toHaveBeenCalledWith(['/chat'], { queryParams: { q: '¿Qué es un percentil?' } });
     });
 
-    it('should return correct status icon for error', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-
-        const component = fixture.componentInstance;
-        expect(component['statusIcon']('error')).toBe(component['LucideAlertCircle']);
-    });
-
-    it('should return default status icon for other statuses', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-
-        const component = fixture.componentInstance;
-        expect(component['statusIcon']('pending')).toBe(component['LucideClock']);
-    });
-
-    it('should return correct status class for indexed', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-
-        expect(fixture.componentInstance['statusClass']('indexed')).toBe('text-tertiary-fixed-dim');
-    });
-
-    it('should return correct status class for error', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-
-        expect(fixture.componentInstance['statusClass']('error')).toBe('text-error');
-    });
-
-    it('should return default status class for other statuses', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-
-        expect(fixture.componentInstance['statusClass']('pending')).toBe('text-on-surface-variant');
-    });
-
-    it('should render stats when data is loaded', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-        fixture.detectChanges();
-
-        const html = fixture.nativeElement.innerHTML;
-        expect(html).toContain('15');
-        expect(html).toContain('3');
-    });
-
-    it('should render empty collections state', () => {
-        const emptyData: DashboardData = {
-            ...mockDashboardData,
-            recent_collections: [],
-            recent_documents: [],
-        };
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(emptyData);
-        fixture.detectChanges();
-
-        const html = fixture.nativeElement.innerHTML;
-        expect(html).toContain('No hay colecciones todavía');
-        expect(html).toContain('Sin documentos aún');
-    });
-
-    it('should render recent documents with divider lines', () => {
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-        fixture.detectChanges();
-
-        const html = fixture.nativeElement.innerHTML;
-        expect(html).toContain('doc.pdf');
-        expect(html).toContain('gpt-4');
-        expect(html).toContain('llama-3');
-    });
-
-    it('should render collection cards and handle click', () => {
+    it('should send the question to the chosen collection', () => {
         const router = TestBed.inject(Router);
-        vi.spyOn(router, 'navigate');
+        const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+        const component = init().componentInstance;
+        component['target'].set('1');
+        component['question'].set('Resume el tema');
+        component['ask']();
+        expect(navigate).toHaveBeenCalledWith(['/collections', 1, 'chat'], { queryParams: { q: 'Resume el tema' } });
+    });
 
-        const fixture = TestBed.createComponent(Dashboard);
-        fixture.detectChanges();
-        httpTesting.expectOne(`${API_BASE}/dashboard`).flush(mockDashboardData);
-        fixture.detectChanges();
+    it('should ask on Enter but not on Shift+Enter', () => {
+        const component = init().componentInstance;
+        const ask = vi.spyOn(component as never, 'ask' as never);
+        component['onQuestionKeydown'](new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true }));
+        expect(ask).not.toHaveBeenCalled();
+        component['onQuestionKeydown'](new KeyboardEvent('keydown', { key: 'Enter' }));
+        expect(ask).toHaveBeenCalled();
+    });
 
-        const article = fixture.nativeElement.querySelector('article');
-        expect(article).toBeTruthy();
-        article.click();
-        expect(router.navigate).toHaveBeenCalledWith(['/collections', 1]);
+    it('should offer to continue the most recent conversation', () => {
+        const router = TestBed.inject(Router);
+        const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+        const fixture = init();
+        expect(fixture.nativeElement.textContent).toContain('Reciente');
+
+        const button = [...fixture.nativeElement.querySelectorAll('button')].find(
+            (b: HTMLButtonElement) => b.textContent!.trim() === 'Continuar',
+        ) as HTMLButtonElement;
+        button.click();
+        expect(navigate).toHaveBeenCalledWith(['/chat'], { queryParams: { c: 8 } });
+    });
+
+    it('should play the last audio in the shared player', () => {
+        const player = TestBed.inject(AudioPlayerService);
+        const play = vi.spyOn(player, 'play').mockImplementation(() => undefined);
+        const fixture = init();
+        const button = [...fixture.nativeElement.querySelectorAll('button')].find((b: HTMLButtonElement) =>
+            b.textContent!.includes('Escuchar'),
+        ) as HTMLButtonElement;
+        button.click();
+        expect(play).toHaveBeenCalledWith(expect.objectContaining({ id: 3, title: 'Tema 1' }));
+    });
+
+    it('should show an audio being generated before the finished ones', () => {
+        const fixture = init({ audios: [{ ...doneAudio, id: 4, title: 'Tema 2', status: 'processing', progress: 30 }, doneAudio] });
+        const text = fixture.nativeElement.textContent;
+        expect(text).toContain('Audio en preparación');
+        expect(text).toContain('Generando 30%');
+    });
+
+    it('should link the last document to its collection', () => {
+        const fixture = init();
+        const link = [...fixture.nativeElement.querySelectorAll('a')].find((a: HTMLAnchorElement) =>
+            a.textContent!.includes('Abrir colección'),
+        ) as HTMLAnchorElement;
+        expect(link.getAttribute('href')).toBe('/collections/1');
+    });
+
+    it('should render the empty collections state', () => {
+        const fixture = init({ dashboard: { ...mockDashboardData, recent_collections: [] } });
+        expect(fixture.nativeElement.textContent).toContain('No hay colecciones todavía');
+    });
+
+    it('should open a recent collection', () => {
+        const router = TestBed.inject(Router);
+        const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+        const fixture = init();
+        fixture.nativeElement.querySelector('[aria-label="Abrir colección Test Collection"]').click();
+        expect(navigate).toHaveBeenCalledWith(['/collections', 1]);
+    });
+
+    it('should describe document statuses', () => {
+        const component = init().componentInstance;
+        expect(component['statusLabel']('indexed')).toBe('Indexado');
+        expect(component['statusLabel']('error')).toBe('Error al indexar');
+        expect(component['statusLabel']('processing')).toBe('Indexándose');
+        expect(component['statusClass']('error')).toBe('text-error');
     });
 });

@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { RouterModule } from '@angular/router';
 import { Tts } from './tts';
+import { AudioPlayerService } from '../core/services/audio-player.service';
 import type { TtsAudioListItem, TtsVoicesResponse } from '../core/models/tts-audio.model';
 
 const API_BASE = 'http://localhost:8000/api/tts';
@@ -73,19 +74,43 @@ describe('Tts', () => {
         expect(fixture.nativeElement.textContent).toContain('Sin audios');
     });
 
-    it('should render a player and a download link for finished audios', () => {
+    it('should offer play for finished audios and progress for the rest', () => {
         const fixture = createFixture([doneAudio, processingAudio]);
         const el: HTMLElement = fixture.nativeElement;
 
         expect(el.querySelectorAll('article').length).toBe(2);
-        const players = el.querySelectorAll('audio');
-        expect(players.length).toBe(1);
-        expect(players[0].getAttribute('src')).toBe(`${API_BASE}/audios/1/file`);
-        expect(el.querySelector('a[aria-label="Descargar MP3"]')?.getAttribute('href')).toBe(
-            `${API_BASE}/audios/1/file?download=true`,
-        );
+        expect(el.querySelector('[aria-label="Reproducir Tema 1"]')).toBeTruthy();
+        expect(el.querySelector('[aria-label="Reproducir Tema 2"]')).toBeNull();
         expect(el.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe('40');
         expect(el.textContent).toContain('Generando 40%');
+        expect(el.textContent).toContain('2 audios');
+    });
+
+    it('should send finished audios to the shared player', () => {
+        const fixture = createFixture([doneAudio]);
+        const player = TestBed.inject(AudioPlayerService);
+        const play = vi.spyOn(player, 'play').mockImplementation(() => undefined);
+
+        fixture.nativeElement.querySelector('[aria-label="Reproducir Tema 1"]').click();
+        expect(play).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 1, title: 'Tema 1', src: `${API_BASE}/audios/1/file` }),
+        );
+    });
+
+    it('should estimate the remaining time from the observed progress', () => {
+        const component = createFixture([]).componentInstance;
+        const start = 1_000_000;
+        component['setAudios']([{ ...processingAudio, progress: 20 }], start);
+
+        // Sin avance suficiente todavía no hay estimación
+        expect(component.remainingLabel({ ...processingAudio, progress: 21 }, start + 30_000)).toBeNull();
+        // 20 % → 40 % en 2 min: quedan 60 % → 6 min
+        expect(component.remainingLabel({ ...processingAudio, progress: 40 }, start + 120_000)).toBe(
+            'quedan unos 6 min',
+        );
+        expect(component.remainingLabel({ ...processingAudio, progress: 99 }, start + 120_000)).toBe(
+            'menos de un minuto',
+        );
     });
 
     it('should group voices by language and preselect the default voice', () => {

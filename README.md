@@ -12,11 +12,14 @@ RAG Chat es una plataforma de inteligencia local que permite gestionar coleccion
 
 | Sección | Descripción |
 |---|---|
-| **Dashboard** | Vista general con estadísticas (documentos, colecciones, modelos), documentos recientes con estado de indexación y accesos rápidos. |
-| **Colecciones** | Listado, creación y eliminación de colecciones. Búsqueda en tiempo real con debounce de 300 ms. |
-| **Detalle de colección** | Gestión de documentos: subida individual o por lotes (drag & drop), lista con nombre, tamaño, chunks y estado, y eliminación. |
-| **Chat RAG** | Interfaz de chat con streaming de tokens en tiempo real. Incluye bloques de "razonamiento" (*thinking*) colapsables, renderizado Markdown y la posibilidad de cancelar la generación en curso. |
-| **Audio (TTS)** | Convierte un documento (con rango de páginas en PDF) o un texto en un MP3. Elección de voz y velocidad, progreso de generación en vivo, reproductor integrado y descarga. Ruta `/tts`. |
+| **Inicio** | Caja para preguntar al chat general o a una colección, fila «Continuar» con la última conversación, el último audio y el último documento, y resumen de colecciones, documentos y modelos. |
+| **Colecciones** | Cuadrícula o lista (se recuerda), búsqueda con debounce de 300 ms, botón directo para chatear y menú de acciones por colección. |
+| **Detalle de colección** | Se pueden soltar archivos en cualquier parte de la página. Cada documento se despliega para ver su resumen, muestra el progreso de indexación y su menú permite generar un audio o eliminarlo. |
+| **Chats** | Chat general y chat por colección con la misma caja de escritura y el mismo mensaje: razonamiento plegable con su duración, Markdown y fuentes citadas como etiquetas numeradas. El chat de colección propone preguntas generadas a partir de sus documentos; el general agrupa el historial por fecha, busca en títulos y contenido, anida las bifurcaciones y exporta a Markdown o PDF. |
+| **OCR** | Lista que se actualiza sola mientras se procesa y acepta archivos arrastrados. El detalle muestra el texto como vista previa o Markdown y puede enviarlo a Audio o añadirlo a una colección. |
+| **Audio (TTS)** | Convierte un documento (con rango de páginas en PDF) o un texto en un MP3. Lista compacta con tiempo restante estimado y un reproductor fijo que sigue sonando al cambiar de pantalla. Ruta `/tts`. |
+
+Interfaz común: tema claro y oscuro (sigue al sistema y se puede cambiar en el menú), menú lateral agrupado con el estado de Ollama, navegación en un panel desplegable en pantallas estrechas, avisos y ayudas emergentes.
 
 ### Tecnologías
 
@@ -24,7 +27,7 @@ RAG Chat es una plataforma de inteligencia local que permite gestionar coleccion
 - **TypeScript 5.9** — Modo strict, tipos propios para todos los modelos.
 - **RxJS 7.8** — Programación reactiva completa (switchMap, debounceTime, takeUntilDestroyed…).
 - **Tailwind CSS 4** — Sistema de tokens vía `@theme` en `styles.css`.
-- **ng-primitives** — Componentes headless (botones, progress, avatar…).
+- **ng-primitives** — Componentes headless: botón, diálogo, menú, avisos, tooltip, popover, pestañas, acordeón, interruptor, deslizador, migas de pan y grupo de botones.
 - **@lucide/angular** — Iconografía SVG.
 - **marked** — Renderizado de Markdown en mensajes del chat.
 - **Vitest** — Suite de tests unitarios.
@@ -116,11 +119,14 @@ RAG Chat is a local intelligence platform for managing document collections and 
 
 | Section | Description |
 |---|---|
-| **Dashboard** | Overview with stats (documents, collections, models), recently indexed files with status indicators, and quick-access links. |
-| **Collections** | List, create, and delete knowledge collections. Real-time search with a 300 ms debounce. |
-| **Collection Detail** | Document management: single or batch upload (drag & drop), table with filename, size, chunk count, status, and delete action. |
-| **RAG Chat** | Chat interface with real-time token streaming. Includes collapsible thinking blocks, Markdown rendering, and the ability to abort an ongoing generation. |
-| **Audio (TTS)** | Turns a document (with a page range for PDFs) or a text into an MP3. Voice and speed selection, live generation progress, built-in player and download. Route `/tts`. |
+| **Home** | A box to ask the general chat or a collection, a Continue row with the latest conversation, audio and document, and a one-line summary of collections, documents and models. |
+| **Collections** | Grid or list view (remembered), 300 ms debounced search, a direct chat button and an actions menu per collection. |
+| **Collection Detail** | Files can be dropped anywhere on the page. Each document expands to show its summary, shows indexing progress, and its menu can queue an audio or delete it. |
+| **Chats** | General and per-collection chat share the composer and the message: collapsible reasoning with its duration, Markdown, and sources cited as numbered chips. The collection chat suggests questions generated from its documents; the general chat groups history by date, searches titles and content, nests forks and exports to Markdown or PDF. |
+| **OCR** | The list refreshes itself while processing and accepts dropped files. The detail shows the text as a preview or raw Markdown and can send it to Audio or add it to a collection. |
+| **Audio (TTS)** | Turns a document (with a page range for PDFs) or a text into an MP3. Compact list with an estimated time left and a fixed player that keeps playing across pages. Route `/tts`. |
+
+Shared UI: light and dark theme (follows the system, switchable from the menu), a grouped sidebar with Ollama status, a drawer menu on narrow screens, toasts and tooltips.
 
 ### Tech Stack
 
@@ -128,7 +134,7 @@ RAG Chat is a local intelligence platform for managing document collections and 
 - **TypeScript 5.9** — Strict mode, typed models throughout.
 - **RxJS 7.8** — Full reactive programming (switchMap, debounceTime, takeUntilDestroyed…).
 - **Tailwind CSS 4** — Token system via `@theme` in `styles.css`.
-- **ng-primitives** — Headless UI components (buttons, progress, avatar…).
+- **ng-primitives** — Headless components: button, dialog, menu, toast, tooltip, popover, tabs, accordion, switch, slider, breadcrumbs and toggle group.
 - **@lucide/angular** — SVG icon library.
 - **marked** — Markdown rendering for chat messages.
 - **Vitest** — Unit test suite.

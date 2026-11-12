@@ -26,3 +26,9 @@ export interface CollectionDocument {
 }
 
 export type DocumentStatus = 'pending' | 'processing' | 'indexed' | 'error';
+
+export interface SuggestedQuestions {
+    collection_id: number;
+    questions: string[];
+    cached: boolean;
+}

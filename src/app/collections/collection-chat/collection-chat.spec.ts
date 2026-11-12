@@ -58,13 +58,71 @@ describe('CollectionChat', () => {
         httpTesting.verify();
     });
 
-    function initComponent() {
+    /** Sin preguntas sugeridas del backend se muestran las dos genéricas. */
+    function initComponent(suggestions: string[] = []) {
+        const fixture = TestBed.createComponent(CollectionChat);
+        fixture.detectChanges();
+        httpTesting.expectOne(`${API_BASE}/collections`).flush(mockCollections);
+        httpTesting
+            .expectOne(`${API_BASE}/collections/3/suggested-questions`)
+            .flush({ collection_id: 3, questions: suggestions, cached: true });
+        fixture.detectChanges();
+        return fixture;
+    }
+
+    it('should send the question that comes from Inicio (?q=)', () => {
+        const route = mockRoute.snapshot as typeof mockRoute.snapshot & { queryParamMap?: unknown };
+        route.queryParamMap = { get: (key: string) => (key === 'q' ? '¿Qué es el ello?' : null) };
+        const router = TestBed.inject(Router);
+        const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+        try {
+            const fixture = initComponent();
+            expect(chatServiceMock.createConversation).toHaveBeenCalled();
+            expect(chatServiceMock.sendMessage).toHaveBeenCalledWith(42, '¿Qué es el ello?');
+            expect(fixture.componentInstance.messages()[0].content).toBe('¿Qué es el ello?');
+            // La pregunta se quita de la URL para que recargar no la repita
+            expect(navigate).toHaveBeenCalledWith([], expect.objectContaining({ queryParams: {}, replaceUrl: true }));
+        } finally {
+            delete route.queryParamMap;
+        }
+    });
+
+    it('should show the suggested questions from the backend', () => {
+        const fixture = initComponent(['¿Qué es el inconsciente?', '¿Qué es el yo?']);
+        const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+        const suggestion = buttons.find((b) => b.textContent!.includes('inconsciente'))!;
+        expect(suggestion).toBeTruthy();
+
+        suggestion.click();
+        expect(fixture.componentInstance.inputValue()).toBe('¿Qué es el inconsciente?');
+    });
+
+    it('should show a placeholder while suggestions are generated', () => {
         const fixture = TestBed.createComponent(CollectionChat);
         fixture.detectChanges();
         httpTesting.expectOne(`${API_BASE}/collections`).flush(mockCollections);
         fixture.detectChanges();
-        return fixture;
-    }
+        expect(fixture.nativeElement.textContent).toContain('Preparando preguntas');
+        httpTesting.expectOne(`${API_BASE}/collections/3/suggested-questions`).error(new ProgressEvent('error'));
+        fixture.detectChanges();
+        expect(fixture.nativeElement.textContent).toContain('¿Cuáles son los puntos clave?');
+    });
+
+    it('should record how long the model was thinking', () => {
+        vi.useFakeTimers();
+        const fixture = initComponent();
+        fixture.componentInstance.inputValue.set('Pregunta');
+        fixture.componentInstance.sendMessage();
+
+        vi.setSystemTime(new Date('2026-01-01T10:00:00Z'));
+        chatStream$.next({ type: 'thinking', token: 'Pienso…' });
+        vi.setSystemTime(new Date('2026-01-01T10:00:04Z'));
+        chatStream$.next({ type: 'token', token: 'Respuesta' });
+
+        const last = fixture.componentInstance.messages().at(-1)!;
+        expect(last.thinkingSeconds).toBe(4);
+        vi.useRealTimers();
+    });
 
     it('should create', () => {
         const fixture = initComponent();

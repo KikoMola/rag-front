@@ -10,30 +10,47 @@ import {
     signal,
     viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
-    LucideArrowUp,
     LucideBrain,
     LucideCheck,
-    LucideChevronDown,
+    LucideCode,
     LucideCopy,
+    LucideDownload,
     LucideDynamicIcon,
+    LucideEllipsis,
+    LucideFileText,
     LucideGitFork,
+    LucideHistory,
     LucideLoader,
     LucideMessageSquarePlus,
+    LucideSearch,
     LucideSparkles,
-    LucideSquare,
     LucideTrash2,
+    LucideZap,
 } from '@lucide/angular';
-import { map, of, switchMap, tap } from 'rxjs';
+import type { LucideIconInput } from '@lucide/angular';
+import { NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogTrigger } from 'ng-primitives/dialog';
+import { NgpMenu, NgpMenuItem, NgpMenuTrigger } from 'ng-primitives/menu';
+import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
+import { catchError, debounceTime, distinctUntilChanged, EMPTY, map, of, switchMap, tap } from 'rxjs';
 import type { Subscription } from 'rxjs';
 import { ChatService } from '../core/services/chat.service';
-import { MarkdownPipe } from '../core/pipes/markdown.pipe';
+import { AssistantMessage } from '../shared/chat/assistant-message';
+import { ChatComposer } from '../shared/chat/chat-composer';
+import { ThinkingTimer } from '../shared/chat/thinking-timer';
 import type { ConversationListItem } from '../core/models/conversation.model';
+import { AppButton } from '../shared/ui/button';
+import { PageHeader } from '../shared/ui/page-header';
+import { ToastService } from '../shared/ui/toast';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
     thinking?: string;
+    thinkingSeconds?: number;
     timestamp: Date;
     streaming?: boolean;
     messageId?: number;
@@ -42,39 +59,112 @@ interface ChatMessage {
 interface ModelOption {
     id: string;
     label: string;
-    emoji: string;
+    icon: LucideIconInput;
     model: string;
+    hint: string;
 }
 
 const MODELS: ModelOption[] = [
-    { id: 'fast', label: 'Rápido', emoji: '⚡', model: 'gemma3:27b' },
-    { id: 'thinking', label: 'Thinking', emoji: '🧠', model: 'gemma4:26b' },
-    { id: 'coding', label: 'Coding', emoji: '💻', model: 'qwen3.6:27b' },
+    { id: 'fast', label: 'Rápido', icon: LucideZap, model: 'gemma3:27b', hint: 'Respuestas directas' },
+    {
+        id: 'thinking',
+        label: 'Razonamiento',
+        icon: LucideBrain,
+        model: 'gemma4:26b',
+        hint: 'Piensa antes de responder',
+    },
+    { id: 'coding', label: 'Código', icon: LucideCode, model: 'qwen3.6:27b', hint: 'Especializado en programación' },
 ];
+
+interface HistoryEntry {
+    conversation: ConversationListItem;
+    forks: ConversationListItem[];
+}
+
+interface HistoryGroup {
+    label: string;
+    entries: HistoryEntry[];
+}
+
+const DAY_MS = 86_400_000;
+
+/** Agrupa por fecha y cuelga cada bifurcación de su conversación de origen. */
+export function groupHistory(conversations: ConversationListItem[], now = new Date()): HistoryGroup[] {
+    const ids = new Set(conversations.map((c) => c.id));
+    const forksByParent = new Map<number, ConversationListItem[]>();
+    const roots: ConversationListItem[] = [];
+    for (const conv of conversations) {
+        if (conv.forked_from_id !== null && ids.has(conv.forked_from_id)) {
+            forksByParent.set(conv.forked_from_id, [...(forksByParent.get(conv.forked_from_id) ?? []), conv]);
+        } else {
+            roots.push(conv);
+        }
+    }
+
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const labelFor = (iso: string): string => {
+        const time = new Date(iso).getTime();
+        if (time >= startOfToday) return 'Hoy';
+        if (time >= startOfToday - DAY_MS) return 'Ayer';
+        if (time >= startOfToday - 6 * DAY_MS) return 'Últimos 7 días';
+        return 'Anteriores';
+    };
+
+    const groups: HistoryGroup[] = [];
+    const sorted = [...roots].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+    for (const conv of sorted) {
+        const label = labelFor(conv.updated_at);
+        let group = groups.find((g) => g.label === label);
+        if (!group) {
+            group = { label, entries: [] };
+            groups.push(group);
+        }
+        group.entries.push({ conversation: conv, forks: forksByParent.get(conv.id) ?? [] });
+    }
+    return groups;
+}
 
 @Component({
     selector: 'app-chat',
-    imports: [LucideDynamicIcon, MarkdownPipe],
+    imports: [
+        NgTemplateOutlet,
+        LucideDynamicIcon,
+        NgpTooltipTrigger,
+        NgpMenu,
+        NgpMenuItem,
+        NgpMenuTrigger,
+        NgpDialog,
+        NgpDialogOverlay,
+        NgpDialogTitle,
+        NgpDialogTrigger,
+        AppButton,
+        PageHeader,
+        AssistantMessage,
+        ChatComposer,
+    ],
     templateUrl: './chat.html',
-    styleUrl: './chat.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'flex h-full overflow-hidden' },
 })
 export class Chat implements OnInit, OnDestroy {
-    protected readonly LucideArrowUp = LucideArrowUp;
-    protected readonly LucideBrain = LucideBrain;
     protected readonly LucideCheck = LucideCheck;
-    protected readonly LucideChevronDown = LucideChevronDown;
     protected readonly LucideCopy = LucideCopy;
+    protected readonly LucideDownload = LucideDownload;
+    protected readonly LucideEllipsis = LucideEllipsis;
+    protected readonly LucideFileText = LucideFileText;
     protected readonly LucideGitFork = LucideGitFork;
+    protected readonly LucideHistory = LucideHistory;
     protected readonly LucideLoader = LucideLoader;
     protected readonly LucideMessageSquarePlus = LucideMessageSquarePlus;
+    protected readonly LucideSearch = LucideSearch;
     protected readonly LucideSparkles = LucideSparkles;
-    protected readonly LucideSquare = LucideSquare;
     protected readonly LucideTrash2 = LucideTrash2;
     protected readonly models = MODELS;
 
     private readonly chatService = inject(ChatService);
+    private readonly toast = inject(ToastService);
+    private readonly route = inject(ActivatedRoute, { optional: true });
+    private readonly router = inject(Router, { optional: true });
     private streamSub: Subscription | null = null;
 
     readonly messagesContainer = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
@@ -89,7 +179,27 @@ export class Chat implements OnInit, OnDestroy {
     expandedThinking = signal<Set<number>>(new Set());
     copiedIndex = signal<number | null>(null);
 
+    /** Texto del buscador del historial. */
+    historyQuery = signal('');
+    /** Conversaciones cuyo contenido coincide con la búsqueda (las devuelve el backend). */
+    contentMatches = signal<ConversationListItem[] | null>(null);
+    exporting = signal(false);
+
     hasMessages = computed(() => this.messages().length > 0);
+    currentTitle = computed(() => {
+        const id = this.conversationId();
+        return this.conversations().find((c) => c.id === id)?.title ?? 'Nueva conversación';
+    });
+
+    historyGroups = computed(() => {
+        const query = this.historyQuery().trim().toLowerCase();
+        if (!query) return groupHistory(this.conversations());
+        // Coincidencias por título al instante, más las del contenido cuando llegan
+        const byTitle = this.conversations().filter((c) => c.title.toLowerCase().includes(query));
+        const byContent = (this.contentMatches() ?? []).filter((c) => c.mode === 'general');
+        const merged = new Map([...byTitle, ...byContent].map((c) => [c.id, c]));
+        return groupHistory([...merged.values()]);
+    });
 
     constructor() {
         effect(() => {
@@ -98,6 +208,22 @@ export class Chat implements OnInit, OnDestroy {
                 queueMicrotask(() => this.scrollToBottom());
             }
         });
+
+        toObservable(this.historyQuery)
+            .pipe(
+                map((q) => q.trim()),
+                debounceTime(300),
+                distinctUntilChanged(),
+                switchMap((q) => {
+                    if (q.length < 2) {
+                        this.contentMatches.set(null);
+                        return EMPTY;
+                    }
+                    return this.chatService.searchConversations(q).pipe(catchError(() => of([])));
+                }),
+                takeUntilDestroyed(),
+            )
+            .subscribe((results) => this.contentMatches.set(results));
     }
 
     ngOnInit(): void {
@@ -105,9 +231,35 @@ export class Chat implements OnInit, OnDestroy {
             next: (convs) => {
                 this.conversations.set(convs.filter((c) => c.mode === 'general'));
                 this.loadingConversations.set(false);
+                this.applyQueryParams();
             },
-            error: () => this.loadingConversations.set(false),
+            error: () => {
+                this.loadingConversations.set(false);
+                this.toast.error('No se pudo cargar el historial. Comprueba que el backend está en marcha.');
+            },
         });
+    }
+
+    /**
+     * Desde Inicio se llega con `?c=<id>` para retomar una conversación o con
+     * `?q=<texto>` para preguntar directamente. Se consumen y se quitan de la URL
+     * para que recargar no repita la pregunta.
+     */
+    private applyQueryParams(): void {
+        const params = this.route?.snapshot.queryParamMap;
+        if (!params) return;
+        const conversationId = Number(params.get('c'));
+        const question = params.get('q')?.trim();
+        if (conversationId) {
+            const conv = this.conversations().find((c) => c.id === conversationId);
+            if (conv) this.selectConversation(conv);
+        } else if (question) {
+            this.inputValue.set(question);
+            this.sendMessage();
+        }
+        if (conversationId || question) {
+            void this.router?.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+        }
     }
 
     ngOnDestroy(): void {
@@ -136,6 +288,7 @@ export class Chat implements OnInit, OnDestroy {
                 );
                 this.expandedThinking.set(new Set());
             },
+            error: () => this.toast.error('No se pudo abrir la conversación.'),
         });
     }
 
@@ -149,8 +302,37 @@ export class Chat implements OnInit, OnDestroy {
                     this.messages.set([]);
                     this.conversationId.set(null);
                 }
+                this.toast.success('Conversación eliminada.');
+            },
+            error: () => this.toast.error('No se pudo eliminar la conversación.'),
+        });
+    }
+
+    /** Descarga la conversación activa en Markdown o PDF. */
+    exportConversation(format: 'md' | 'pdf'): void {
+        const id = this.conversationId();
+        if (!id || this.exporting()) return;
+        this.exporting.set(true);
+        this.chatService.exportConversation(id, format).subscribe({
+            next: (blob) => {
+                this.exporting.set(false);
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${this.currentTitle().replace(/[\\/:*?"<>|]+/g, '-')}.${format}`;
+                link.click();
+                URL.revokeObjectURL(url);
+            },
+            error: () => {
+                this.exporting.set(false);
+                this.toast.error('No se pudo exportar la conversación.');
             },
         });
+    }
+
+    deleteCurrentConversation(): void {
+        const id = this.conversationId();
+        if (id) this.deleteConversation(new MouseEvent('click'), id);
     }
 
     selectModel(model: ModelOption): void {
@@ -176,6 +358,7 @@ export class Chat implements OnInit, OnDestroy {
 
         let fullResponse = '';
         let thinkingContent = '';
+        const timer = new ThinkingTimer();
         let justCreated = false;
         const model = this.selectedModel().model;
 
@@ -195,10 +378,12 @@ export class Chat implements OnInit, OnDestroy {
                 next: (event) => {
                     if (event.type === 'thinking') {
                         thinkingContent += event.token;
-                        this.updateLastMessage(fullResponse, thinkingContent);
+                        timer.onThinking();
+                        this.updateLastMessage(fullResponse, thinkingContent, timer.seconds);
                     } else if (event.type === 'token') {
                         fullResponse += event.token;
-                        this.updateLastMessage(fullResponse, thinkingContent);
+                        timer.onContent();
+                        this.updateLastMessage(fullResponse, thinkingContent, timer.seconds);
                     } else if (event.type === 'done') {
                         this.finishStream();
                         const convId = this.conversationId();
@@ -275,10 +460,13 @@ export class Chat implements OnInit, OnDestroy {
     }
 
     copyMessage(content: string, index: number): void {
-        navigator.clipboard.writeText(content).then(() => {
-            this.copiedIndex.set(index);
-            setTimeout(() => this.copiedIndex.set(null), 2000);
-        });
+        navigator.clipboard.writeText(content).then(
+            () => {
+                this.copiedIndex.set(index);
+                setTimeout(() => this.copiedIndex.set(null), 2000);
+            },
+            () => this.toast.error('No se pudo copiar al portapapeles.'),
+        );
     }
 
     forkFromMessage(messageId: number): void {
@@ -299,9 +487,11 @@ export class Chat implements OnInit, OnDestroy {
                             }))
                         );
                         this.expandedThinking.set(new Set());
+                        this.toast.success('Bifurcación creada a partir de ese mensaje.');
                     },
                 });
             },
+            error: () => this.toast.error('No se pudo bifurcar la conversación.'),
         });
     }
 
@@ -333,12 +523,13 @@ export class Chat implements OnInit, OnDestroy {
         this.streaming.set(false);
     }
 
-    private updateLastMessage(content: string, thinking: string): void {
+    private updateLastMessage(content: string, thinking: string, thinkingSeconds?: number): void {
         this.messages.update((msgs) => {
             const updated = [...msgs];
             const last = { ...updated[updated.length - 1] };
             last.content = content;
             last.thinking = thinking;
+            last.thinkingSeconds = thinkingSeconds;
             updated[updated.length - 1] = last;
             return updated;
         });

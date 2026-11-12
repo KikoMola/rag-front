@@ -1,7 +1,35 @@
 <app-sidebar />
 
-<main class="md:ml-64 h-screen overflow-hidden relative flex flex-col">
+<main class="md:ml-64 h-dvh overflow-hidden relative flex flex-col">
+    <!-- Cabecera solo en pantallas estrechas, donde el menú lateral se oculta -->
+    <header
+        class="md:hidden flex items-center gap-3 px-4 h-14 shrink-0 bg-surface-container-high border-b border-outline-variant/40"
+    >
+        <button
+            appButton
+            variant="ghost"
+            size="icon"
+            [ngpDialogTrigger]="mobileNav"
+            aria-label="Abrir menú"
+        >
+            <svg [lucideIcon]="LucideMenu" class="size-5"></svg>
+        </button>
+        <span class="text-base font-black tracking-tight text-primary font-headline">RAG Chat</span>
+    </header>
+
     <div class="flex-1 overflow-y-auto">
         <router-outlet />
     </div>
+
+    <!-- Reproductor de audio: sigue sonando al cambiar de pantalla -->
+    <app-player-bar class="shrink-0" />
 </main>
+
+<ng-template #mobileNav let-close="close">
+    <div ngpDialogOverlay class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm md:hidden">
+        <div ngpDialog aria-label="Menú" class="mobile-drawer h-dvh w-72 max-w-[85vw] shadow-2xl">
+            <h2 ngpDialogTitle class="sr-only">Menú</h2>
+            <app-sidebar drawer (navigated)="close()" />
+        </div>
+    </div>
+</ng-template>
