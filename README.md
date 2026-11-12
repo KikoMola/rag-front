@@ -16,6 +16,7 @@ RAG Chat es una plataforma de inteligencia local que permite gestionar coleccion
 | **Colecciones** | Listado, creación y eliminación de colecciones. Búsqueda en tiempo real con debounce de 300 ms. |
 | **Detalle de colección** | Gestión de documentos: subida individual o por lotes (drag & drop), lista con nombre, tamaño, chunks y estado, y eliminación. |
 | **Chat RAG** | Interfaz de chat con streaming de tokens en tiempo real. Incluye bloques de "razonamiento" (*thinking*) colapsables, renderizado Markdown y la posibilidad de cancelar la generación en curso. |
+| **Audio (TTS)** | Convierte un documento (con rango de páginas en PDF) o un texto en un MP3. Elección de voz y velocidad, progreso de generación en vivo, reproductor integrado y descarga. Ruta `/tts`. |
 
 ### Tecnologías
 
@@ -119,6 +120,7 @@ RAG Chat is a local intelligence platform for managing document collections and 
 | **Collections** | List, create, and delete knowledge collections. Real-time search with a 300 ms debounce. |
 | **Collection Detail** | Document management: single or batch upload (drag & drop), table with filename, size, chunk count, status, and delete action. |
 | **RAG Chat** | Chat interface with real-time token streaming. Includes collapsible thinking blocks, Markdown rendering, and the ability to abort an ongoing generation. |
+| **Audio (TTS)** | Turns a document (with a page range for PDFs) or a text into an MP3. Voice and speed selection, live generation progress, built-in player and download. Route `/tts`. |
 
 ### Tech Stack
 

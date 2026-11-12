@@ -36,6 +36,10 @@ export const routes: Routes = [
                 path: 'ocr/:id',
                 loadComponent: () => import('./ocr/ocr-detail/ocr-detail').then((m) => m.OcrDetail),
             },
+            {
+                path: 'tts',
+                loadComponent: () => import('./tts/tts').then((m) => m.Tts),
+            },
         ],
     },
 ];
