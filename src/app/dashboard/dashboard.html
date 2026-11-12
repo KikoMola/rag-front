@@ -1,197 +1,249 @@
-<div class="flex flex-col gap-8 px-6 py-8 lg:px-10 pb-24">
-    <app-page-header title="Inicio" subtitle="Resumen de tus colecciones, documentos y modelos.">
-        <a pageActions appButton variant="secondary" routerLink="/chat">
-            <svg [lucideIcon]="LucideMessageSquare" [size]="16"></svg>
-            Nueva conversación
-        </a>
-        <a pageActions appButton routerLink="/collections">
-            <svg [lucideIcon]="LucideFolderOpen" [size]="16"></svg>
-            Ver colecciones
-        </a>
-    </app-page-header>
+<div class="flex flex-col gap-8 px-6 py-8 lg:px-10 pb-24 max-w-6xl">
+    <app-page-header title="Inicio" subtitle="Pregunta a tus documentos, retoma lo que dejaste o abre una herramienta." />
 
-    <div class="flex flex-col lg:flex-row gap-8">
-        @if (loading()) {
-            <!-- Skeleton -->
-            <div class="flex-1 space-y-8 animate-pulse" aria-hidden="true">
-                <section class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    @for (_ of [1, 2, 3]; track $index) {
-                        <div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col gap-3">
-                            <div class="h-3 w-28 bg-surface-container-high rounded-full"></div>
-                            <div class="h-8 w-16 bg-surface-container-high rounded-full"></div>
-                        </div>
-                    }
-                </section>
-                <div class="h-6 w-48 bg-surface-container-high rounded-full"></div>
-                <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    @for (_ of [1, 2]; track $index) {
-                        <div class="bg-surface-container-lowest p-6 rounded-xl space-y-6">
-                            <div class="flex justify-between items-start">
-                                <div class="w-11 h-11 bg-surface-container-high rounded-lg"></div>
-                                <div class="h-3 w-16 bg-surface-container-high rounded-full"></div>
-                            </div>
-                            <div class="h-5 w-3/4 bg-surface-container-high rounded-full"></div>
-                            <div class="h-3 w-24 bg-surface-container-high rounded-full"></div>
-                        </div>
-                    }
-                </section>
-            </div>
-            <aside class="w-full lg:w-80 space-y-8 animate-pulse" aria-hidden="true">
-                <div class="bg-surface-container-high p-6 rounded-2xl space-y-6">
-                    <div class="h-3 w-36 bg-surface-container-highest rounded-full"></div>
-                    @for (_ of [1, 2, 3]; track $index) {
-                        <div class="flex gap-3">
-                            <div class="w-8 h-8 bg-surface-container-highest rounded-full shrink-0"></div>
-                            <div class="flex-1 space-y-2">
-                                <div class="h-3 w-full bg-surface-container-highest rounded-full"></div>
-                                <div class="h-2.5 w-2/3 bg-surface-container-highest rounded-full"></div>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </aside>
-        } @else if (data(); as d) {
-            <!-- Left: Workspace -->
-            <div class="flex-1 min-w-0 space-y-8">
-                <!-- Statistics -->
-                <section class="grid grid-cols-1 sm:grid-cols-3 gap-6" aria-label="Resumen">
-                    <div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col gap-1">
-                        <span class="text-on-surface-variant text-sm font-medium">Documentos</span>
-                        <span class="text-3xl font-extrabold text-primary font-headline tracking-tight tabular-nums">{{
-                            d.stats.total_documents
-                        }}</span>
-                    </div>
-                    <div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col gap-1">
-                        <span class="text-on-surface-variant text-sm font-medium">Colecciones</span>
-                        <span class="text-3xl font-extrabold text-primary font-headline tracking-tight tabular-nums">{{
-                            d.stats.total_collections
-                        }}</span>
-                    </div>
-                    <div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col gap-1">
-                        <span class="text-on-surface-variant text-sm font-medium">Modelos disponibles</span>
-                        <span class="text-3xl font-extrabold text-primary font-headline tracking-tight tabular-nums">{{
-                            d.stats.models.length
-                        }}</span>
-                    </div>
-                </section>
-
-                <!-- Recent collections -->
-                <div class="flex items-center justify-between gap-4">
-                    <h2 class="text-xl font-bold text-on-surface font-headline">Colecciones recientes</h2>
-                    <a appButton variant="ghost" size="sm" routerLink="/collections">
-                        Ver todas
-                        <svg [lucideIcon]="LucideArrowRight" [size]="14"></svg>
-                    </a>
-                </div>
-
-                <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    @if (d.recent_collections.length === 0) {
-                        <div class="col-span-full flex flex-col items-center justify-center py-16 text-center gap-3">
-                            <p class="text-on-surface-variant text-sm">No hay colecciones todavía.</p>
-                            <a appButton variant="secondary" size="sm" routerLink="/collections">
-                                Crear la primera colección
-                            </a>
-                        </div>
-                    } @else {
-                        @for (collection of d.recent_collections; track collection.id) {
-                            <article
-                                class="group bg-surface-container-lowest p-6 rounded-xl ring-1 ring-transparent hover:ring-primary/30 transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-surface-tint"
-                                tabindex="0"
-                                role="link"
-                                [attr.aria-label]="'Abrir colección ' + collection.name"
-                                (click)="openCollection(collection.id)"
-                                (keydown.enter)="openCollection(collection.id)"
-                            >
-                                <div class="flex justify-between items-start mb-4">
-                                    <div
-                                        class="p-3 bg-surface-container-low rounded-lg group-hover:bg-primary/5 transition-colors"
-                                    >
-                                        <svg [lucideIcon]="LucideDatabase" class="text-primary" [size]="20"></svg>
-                                    </div>
-                                    <span class="text-xs text-on-surface-variant">{{
-                                        formatDate(collection.created_at)
-                                    }}</span>
-                                </div>
-                                <h3 class="text-lg font-bold text-on-surface mb-4 font-headline">{{ collection.name }}</h3>
-                                <div class="flex items-center justify-between text-sm">
-                                    <span class="flex items-center gap-2 text-on-surface-variant">
-                                        <svg [lucideIcon]="LucideFileText" [size]="14"></svg>
-                                        {{ collection.document_count }}
-                                        {{ collection.document_count === 1 ? 'documento' : 'documentos' }}
-                                    </span>
-                                    <span
-                                        class="text-primary font-semibold flex items-center gap-1 group-hover:gap-2 transition-all"
-                                    >
-                                        Abrir
-                                        <svg [lucideIcon]="LucideArrowRight" [size]="14"></svg>
-                                    </span>
-                                </div>
-                            </article>
+    <!-- Preguntar -->
+    <section
+        class="bg-surface-container-lowest rounded-2xl ring-1 ring-outline-variant/30 shadow-sm p-4 sm:p-5 flex flex-col gap-3 focus-within:ring-2 focus-within:ring-surface-tint/50"
+        aria-label="Preguntar"
+    >
+        <label for="home-question" class="sr-only">Pregunta</label>
+        <textarea
+            id="home-question"
+            rows="2"
+            class="w-full bg-transparent resize-none outline-none text-base text-on-surface placeholder:text-on-surface-variant field-sizing-content min-h-12 max-h-40"
+            placeholder="Pregunta algo a tus documentos…"
+            [value]="question()"
+            (input)="question.set($any($event.target).value)"
+            (keydown)="onQuestionKeydown($event)"
+        ></textarea>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <label for="home-target" class="text-sm text-on-surface-variant">Preguntar a</label>
+            <select
+                id="home-target"
+                [value]="target()"
+                (change)="target.set($any($event.target).value)"
+                class="h-9 max-w-64 rounded-lg bg-surface-container-high px-3 text-sm text-on-surface cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-surface-tint"
+            >
+                <option [value]="GENERAL_CHAT">Chat general</option>
+                @if (askableCollections().length) {
+                    <optgroup label="Colecciones">
+                        @for (collection of askableCollections(); track collection.id) {
+                            <option [value]="'' + collection.id">
+                                {{ collection.name }} · {{ collection.document_count }}
+                                {{ collection.document_count === 1 ? 'documento' : 'documentos' }}
+                            </option>
                         }
+                    </optgroup>
+                }
+            </select>
+            <span class="text-xs text-on-surface-variant">
+                @if (targetCollection()) {
+                    Responde solo con sus documentos y cita las fuentes.
+                } @else {
+                    Responde el modelo rápido, sin consultar documentos.
+                }
+            </span>
+            <button appButton class="ml-auto" [disabled]="!question().trim()" (click)="ask()">
+                <svg [lucideIcon]="LucideSendHorizontal" class="size-4"></svg>
+                Preguntar
+            </button>
+        </div>
+    </section>
+
+    @if (loading()) {
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-pulse" aria-hidden="true">
+            @for (_ of [1, 2, 3]; track $index) {
+                <div class="h-32 rounded-xl bg-surface-container-lowest"></div>
+            }
+        </div>
+    } @else if (data(); as d) {
+        <!-- Continuar -->
+        @if (lastConversation() || featuredAudio() || lastDocument()) {
+            <section class="flex flex-col gap-3" aria-labelledby="continue-heading">
+                <h2 id="continue-heading" class="text-lg font-bold text-on-surface font-headline">Continuar</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @if (lastConversation(); as conv) {
+                        <article class="bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-2 ring-1 ring-outline-variant/30">
+                            <p class="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">
+                                <svg [lucideIcon]="LucideMessageSquare" class="size-4 text-primary"></svg>
+                                Última conversación
+                            </p>
+                            <h3 class="font-semibold text-on-surface line-clamp-2">{{ conv.title }}</h3>
+                            <p class="text-xs text-on-surface-variant">{{ formatDate(conv.updated_at) }}</p>
+                            <button
+                                appButton
+                                variant="ghost"
+                                size="sm"
+                                class="mt-auto self-start -ml-3"
+                                (click)="continueConversation(conv)"
+                            >
+                                Continuar
+                                <svg [lucideIcon]="LucideArrowRight" class="size-4"></svg>
+                            </button>
+                        </article>
                     }
-                </section>
+
+                    @if (featuredAudio(); as audio) {
+                        <article class="bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-2 ring-1 ring-outline-variant/30">
+                            <p class="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">
+                                <svg [lucideIcon]="LucideHeadphones" class="size-4 text-primary"></svg>
+                                {{ audio.status === 'done' ? 'Último audio' : 'Audio en preparación' }}
+                            </p>
+                            <h3 class="font-semibold text-on-surface line-clamp-2">{{ audio.title }}</h3>
+                            @if (audio.status === 'done') {
+                                <p class="text-xs text-on-surface-variant">{{ audio.source_name ?? 'Texto pegado' }}</p>
+                                <button
+                                    appButton
+                                    variant="secondary"
+                                    size="sm"
+                                    class="mt-auto self-start"
+                                    (click)="playAudio(audio)"
+                                >
+                                    <svg
+                                        [lucideIcon]="player.isCurrent(audio.id) && player.playing() ? LucidePause : LucidePlay"
+                                        class="size-4"
+                                    ></svg>
+                                    {{ player.isCurrent(audio.id) && player.playing() ? 'Pausar' : 'Escuchar' }}
+                                </button>
+                            } @else {
+                                <div class="mt-auto flex flex-col gap-1">
+                                    <span class="text-xs text-on-surface-variant tabular-nums">
+                                        {{ audio.status === 'pending' ? 'En cola' : 'Generando ' + audio.progress + '%' }}
+                                    </span>
+                                    <div
+                                        class="h-1.5 rounded-full bg-surface-container-high overflow-hidden"
+                                        role="progressbar"
+                                        aria-valuemin="0"
+                                        aria-valuemax="100"
+                                        [attr.aria-valuenow]="audio.progress"
+                                        [attr.aria-label]="'Progreso de ' + audio.title"
+                                    >
+                                        <div class="h-full bg-primary rounded-full" [style.width.%]="audio.progress"></div>
+                                    </div>
+                                    <a routerLink="/tts" class="text-xs font-semibold text-primary mt-1 self-start">Ver en Audio</a>
+                                </div>
+                            }
+                        </article>
+                    }
+
+                    @if (lastDocument(); as doc) {
+                        <article class="bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-2 ring-1 ring-outline-variant/30">
+                            <p class="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">
+                                <svg [lucideIcon]="LucideFileText" class="size-4 text-primary"></svg>
+                                Último documento
+                            </p>
+                            <h3 class="font-semibold text-on-surface line-clamp-2 break-all">{{ doc.filename }}</h3>
+                            <p class="flex items-center gap-1.5 text-xs" [class]="statusClass(doc.status)">
+                                <svg [lucideIcon]="statusIcon(doc.status)" class="size-3.5"></svg>
+                                {{ statusLabel(doc.status) }}
+                                <span class="text-on-surface-variant">· {{ doc.collection_name }}</span>
+                            </p>
+                            <a
+                                appButton
+                                variant="ghost"
+                                size="sm"
+                                class="mt-auto self-start -ml-3"
+                                [routerLink]="lastDocumentLink()"
+                            >
+                                Abrir colección
+                                <svg [lucideIcon]="LucideArrowRight" class="size-4"></svg>
+                            </a>
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+
+        <!-- Colecciones recientes -->
+        <section class="flex flex-col gap-3" aria-labelledby="recent-heading">
+            <div class="flex items-center justify-between gap-4">
+                <h2 id="recent-heading" class="text-lg font-bold text-on-surface font-headline">Colecciones recientes</h2>
+                <a appButton variant="ghost" size="sm" routerLink="/collections">
+                    Ver todas
+                    <svg [lucideIcon]="LucideArrowRight" class="size-4"></svg>
+                </a>
             </div>
 
-            <!-- Right: Sidebar -->
-            <aside class="w-full lg:w-80 space-y-6">
-                <!-- Recent Documents -->
-                <section class="bg-surface-container-high p-6 rounded-2xl">
-                    <h2 class="text-base font-bold text-on-surface font-headline mb-5">Documentos recientes</h2>
-                    @if (d.recent_documents.length === 0) {
-                        <p class="text-sm text-on-surface-variant">Sin documentos aún.</p>
-                    } @else {
-                        <ul class="space-y-4">
-                            @for (doc of d.recent_documents; track doc.id; let last = $last) {
-                                <li class="flex gap-3">
-                                    <div class="relative shrink-0">
-                                        <div
-                                            class="w-8 h-8 bg-surface-container-lowest rounded-full flex items-center justify-center"
-                                        >
-                                            <svg
-                                                [lucideIcon]="statusIcon(doc.status)"
-                                                [class]="statusClass(doc.status)"
-                                                [size]="14"
-                                            ></svg>
-                                        </div>
-                                        @if (!last) {
-                                            <div
-                                                class="absolute top-8 left-1/2 -translate-x-1/2 w-px h-4 bg-outline-variant/30"
-                                            ></div>
-                                        }
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-on-surface truncate">{{ doc.filename }}</p>
-                                        <p class="text-xs text-on-surface-variant mt-0.5 truncate">
-                                            {{ doc.collection_name }} · {{ formatDate(doc.created_at) }}
-                                        </p>
-                                    </div>
-                                </li>
-                            }
-                        </ul>
+            @if (d.recent_collections.length === 0) {
+                <div
+                    class="flex flex-col items-center justify-center py-12 text-center gap-3 rounded-xl bg-surface-container-lowest"
+                >
+                    <p class="text-on-surface-variant text-sm">No hay colecciones todavía.</p>
+                    <a appButton variant="secondary" size="sm" routerLink="/collections">Crear la primera colección</a>
+                </div>
+            } @else {
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @for (collection of d.recent_collections; track collection.id) {
+                        <article
+                            class="group bg-surface-container-lowest p-5 rounded-xl ring-1 ring-outline-variant/30 hover:ring-primary/30 transition-shadow cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-surface-tint flex items-center gap-3"
+                            tabindex="0"
+                            role="link"
+                            [attr.aria-label]="'Abrir colección ' + collection.name"
+                            (click)="openCollection(collection.id)"
+                            (keydown.enter)="openCollection(collection.id)"
+                        >
+                            <span class="size-10 shrink-0 rounded-lg bg-surface-container-low grid place-items-center">
+                                <svg [lucideIcon]="LucideDatabase" class="text-primary" [size]="18"></svg>
+                            </span>
+                            <span class="flex-1 min-w-0">
+                                <span class="block font-semibold text-on-surface truncate">{{ collection.name }}</span>
+                                <span class="block text-xs text-on-surface-variant">
+                                    {{ collection.document_count }}
+                                    {{ collection.document_count === 1 ? 'documento' : 'documentos' }} ·
+                                    {{ formatDate(collection.created_at) }}
+                                </span>
+                            </span>
+                            <svg
+                                [lucideIcon]="LucideArrowRight"
+                                class="size-4 text-on-surface-variant group-hover:text-primary transition-colors"
+                            ></svg>
+                        </article>
                     }
-                </section>
+                </div>
+            }
+        </section>
 
-                <!-- Models -->
-                <section class="bg-surface-container-high p-6 rounded-2xl">
-                    <h2 class="text-base font-bold text-on-surface font-headline mb-4">Modelos disponibles</h2>
-                    <ul class="flex flex-wrap gap-2">
+        <!-- Resumen -->
+        <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-on-surface-variant" aria-label="Resumen">
+            <span class="tabular-nums">{{ d.stats.total_collections }} colecciones</span>
+            <span aria-hidden="true">·</span>
+            <span class="tabular-nums">{{ d.stats.total_documents }} documentos</span>
+            <span aria-hidden="true">·</span>
+            <button
+                type="button"
+                [ngpPopoverTrigger]="modelsPopover"
+                ngpPopoverTriggerPlacement="top-start"
+                class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 -mx-1.5 hover:bg-surface-container-high hover:text-on-surface cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-surface-tint"
+            >
+                <span class="size-2 rounded-full" [class]="d.stats.models.length ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+                <span class="tabular-nums">{{ d.stats.models.length }} modelos disponibles</span>
+            </button>
+        </p>
+        <ng-template #modelsPopover>
+            <div
+                ngpPopover
+                class="w-72 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-xl p-4"
+            >
+                <p class="text-sm font-semibold text-on-surface mb-2">Modelos en Ollama</p>
+                @if (d.stats.models.length) {
+                    <ul class="flex flex-col gap-1">
                         @for (model of d.stats.models; track model) {
-                            <li
-                                class="flex items-center gap-1.5 px-2.5 py-1 bg-surface-container-lowest rounded-md text-xs font-medium text-on-surface"
-                            >
+                            <li class="flex items-center gap-2 text-sm text-on-surface">
                                 <svg [lucideIcon]="LucideCpu" class="size-3.5 text-on-surface-variant shrink-0"></svg>
-                                {{ model }}
+                                <span class="font-mono text-xs">{{ model }}</span>
                             </li>
                         }
                     </ul>
-                </section>
-            </aside>
-        } @else {
-            <div class="flex-1 flex flex-col items-center justify-center py-24 text-center gap-2">
-                <svg [lucideIcon]="LucideAlertCircle" class="size-8 text-error"></svg>
-                <p class="font-semibold text-on-surface">No se pudo cargar el resumen</p>
-                <p class="text-sm text-on-surface-variant">Comprueba que el backend está en marcha en el puerto 8000.</p>
+                } @else {
+                    <p class="text-sm text-on-surface-variant">Ollama no responde o no tiene modelos descargados.</p>
+                }
             </div>
-        }
-    </div>
+        </ng-template>
+    } @else {
+        <div class="flex flex-col items-center justify-center py-16 text-center gap-2">
+            <svg [lucideIcon]="LucideAlertCircle" class="size-8 text-error"></svg>
+            <p class="font-semibold text-on-surface">No se pudo cargar el resumen</p>
+            <p class="text-sm text-on-surface-variant">Comprueba que el backend está en marcha en el puerto 8000.</p>
+        </div>
+    }
 </div>

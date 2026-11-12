@@ -70,6 +70,23 @@ describe('CollectionChat', () => {
         return fixture;
     }
 
+    it('should send the question that comes from Inicio (?q=)', () => {
+        const route = mockRoute.snapshot as typeof mockRoute.snapshot & { queryParamMap?: unknown };
+        route.queryParamMap = { get: (key: string) => (key === 'q' ? '¿Qué es el ello?' : null) };
+        const router = TestBed.inject(Router);
+        const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+        try {
+            const fixture = initComponent();
+            expect(chatServiceMock.createConversation).toHaveBeenCalled();
+            expect(chatServiceMock.sendMessage).toHaveBeenCalledWith(42, '¿Qué es el ello?');
+            expect(fixture.componentInstance.messages()[0].content).toBe('¿Qué es el ello?');
+            // La pregunta se quita de la URL para que recargar no la repita
+            expect(navigate).toHaveBeenCalledWith([], expect.objectContaining({ queryParams: {}, replaceUrl: true }));
+        } finally {
+            delete route.queryParamMap;
+        }
+    });
+
     it('should show the suggested questions from the backend', () => {
         const fixture = initComponent(['¿Qué es el inconsciente?', '¿Qué es el yo?']);
         const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];

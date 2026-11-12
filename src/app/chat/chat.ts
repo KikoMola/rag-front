@@ -11,6 +11,7 @@ import {
     viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
     LucideBrain,
@@ -162,6 +163,8 @@ export class Chat implements OnInit, OnDestroy {
 
     private readonly chatService = inject(ChatService);
     private readonly toast = inject(ToastService);
+    private readonly route = inject(ActivatedRoute, { optional: true });
+    private readonly router = inject(Router, { optional: true });
     private streamSub: Subscription | null = null;
 
     readonly messagesContainer = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
@@ -228,12 +231,35 @@ export class Chat implements OnInit, OnDestroy {
             next: (convs) => {
                 this.conversations.set(convs.filter((c) => c.mode === 'general'));
                 this.loadingConversations.set(false);
+                this.applyQueryParams();
             },
             error: () => {
                 this.loadingConversations.set(false);
                 this.toast.error('No se pudo cargar el historial. Comprueba que el backend está en marcha.');
             },
         });
+    }
+
+    /**
+     * Desde Inicio se llega con `?c=<id>` para retomar una conversación o con
+     * `?q=<texto>` para preguntar directamente. Se consumen y se quitan de la URL
+     * para que recargar no repita la pregunta.
+     */
+    private applyQueryParams(): void {
+        const params = this.route?.snapshot.queryParamMap;
+        if (!params) return;
+        const conversationId = Number(params.get('c'));
+        const question = params.get('q')?.trim();
+        if (conversationId) {
+            const conv = this.conversations().find((c) => c.id === conversationId);
+            if (conv) this.selectConversation(conv);
+        } else if (question) {
+            this.inputValue.set(question);
+            this.sendMessage();
+        }
+        if (conversationId || question) {
+            void this.router?.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+        }
     }
 
     ngOnDestroy(): void {

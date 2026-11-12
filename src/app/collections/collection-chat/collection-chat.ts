@@ -113,6 +113,13 @@ export class CollectionChat implements OnInit, OnDestroy {
                 this.collection.set(match ?? null);
                 this.loading.set(false);
                 if (match && match.document_count > 0) this.loadSuggestions();
+                // Desde Inicio se puede llegar con la pregunta ya escrita (?q=)
+                const question = this.route.snapshot.queryParamMap?.get('q')?.trim();
+                if (match && question) {
+                    this.inputValue.set(question);
+                    this.sendMessage();
+                    void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+                }
             },
             error: () => {
                 this.loading.set(false);
