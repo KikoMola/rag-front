@@ -6,6 +6,7 @@ import {
     LucideCirclePlus,
     LucideDynamicIcon,
     LucideFolderOpen,
+    LucideHeadphones,
     LucideMessageSquare,
     LucideScanText,
 } from '@lucide/angular';
@@ -31,5 +32,6 @@ export class Sidebar {
         { label: 'Chat', icon: LucideMessageSquare, route: '/chat' },
         { label: 'Collections', icon: LucideFolderOpen, route: '/collections' },
         { label: 'OCR', icon: LucideScanText, route: '/ocr' },
+        { label: 'Audio', icon: LucideHeadphones, route: '/tts' },
     ]);
 }
