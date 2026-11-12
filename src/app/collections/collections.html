@@ -1,72 +1,72 @@
-<app-navbar />
-
-<div class="px-8 mt-8 pb-24">
-    <!-- Header & CTA -->
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h2 class="text-4xl font-extrabold tracking-tight font-headline text-on-surface">Colecciones</h2>
-            <p class="text-on-surface-variant mt-1 flex items-center gap-2">
-                @if (hasSearch()) {
-                    {{ displayedCollections().length }} resultado(s) para
-                    <span class="font-semibold text-on-surface">"{{ searchQuery() }}"</span>
-                    @if (searching()) {
-                        <svg [lucideIcon]="LucideLoader" class="size-3.5 animate-spin"></svg>
-                    }
-                } @else {
-                    {{ collections().length }} colecciones • {{ totalDocuments() }} documentos totales
+<div class="flex flex-col gap-8 px-6 py-8 lg:px-10 pb-24">
+    <app-page-header title="Colecciones">
+        <span pageSubtitle>
+            @if (hasSearch()) {
+                {{ displayedCollections().length }}
+                {{ displayedCollections().length === 1 ? 'resultado' : 'resultados' }} para
+                <span class="font-semibold text-on-surface">«{{ searchQuery() }}»</span>
+                @if (searching()) {
+                    <svg [lucideIcon]="LucideLoader" class="inline size-3.5 animate-spin ml-1"></svg>
                 }
-            </p>
+            } @else {
+                {{ collections().length }} colecciones · {{ totalDocuments() }} documentos
+            }
+        </span>
+        <div pageActions class="relative w-64 max-w-full">
+            <svg
+                [lucideIcon]="LucideSearch"
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
+                [size]="16"
+            ></svg>
+            <label for="collections-search" class="sr-only">Buscar colecciones</label>
+            <input
+                id="collections-search"
+                type="search"
+                class="w-full h-10 bg-surface-container-lowest ring-1 ring-inset ring-outline-variant rounded-lg pl-9 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant outline-none focus:ring-2 focus:ring-surface-tint transition-shadow"
+                placeholder="Buscar colección…"
+                [value]="searchQuery()"
+                (input)="searchQuery.set($any($event.target).value)"
+            />
         </div>
-        <button
-            [ngpDialogTrigger]="createCollectionDialog"
-            (click)="openCreateForm()"
-            class="bg-linear-to-r from-primary to-primary-container text-on-primary px-6 py-3 rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-95 transition-all shadow-lg shadow-primary/10 cursor-pointer"
-        >
-            <svg [lucideIcon]="LucideCirclePlus" [size]="14"></svg>
-            Nueva Colección
+        <button pageActions appButton [ngpDialogTrigger]="createCollectionDialog" (click)="openCreateForm()">
+            <svg [lucideIcon]="LucideCirclePlus" [size]="16"></svg>
+            Nueva colección
         </button>
-    </div>
+    </app-page-header>
 
-    <!-- Loading State -->
     @if (loading()) {
         <div class="flex items-center justify-center py-24">
             <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin"></svg>
         </div>
     } @else if (displayedCollections().length === 0) {
         @if (hasSearch()) {
-            <!-- No Results State -->
             <div class="flex flex-col items-center justify-center py-24 text-center">
                 <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
                     <svg [lucideIcon]="LucideSearch" class="size-10 text-on-surface-variant"></svg>
                 </div>
-                <h3 class="text-xl font-bold font-headline text-on-surface mb-2">Sin resultados</h3>
+                <h2 class="text-xl font-bold font-headline text-on-surface mb-2">Sin resultados</h2>
                 <p class="text-on-surface-variant max-w-md">
                     No se encontraron colecciones para
-                    <span class="font-semibold text-on-surface">"{{ searchQuery() }}"</span>.
+                    <span class="font-semibold text-on-surface">«{{ searchQuery() }}»</span>.
                 </p>
             </div>
         } @else {
-        <div class="flex flex-col items-center justify-center py-24 text-center">
-            <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
-                <svg [lucideIcon]="LucideFolderOpen" class="size-10 text-on-surface-variant"></svg>
+            <div class="flex flex-col items-center justify-center py-24 text-center">
+                <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
+                    <svg [lucideIcon]="LucideFolderOpen" class="size-10 text-on-surface-variant"></svg>
+                </div>
+                <h2 class="text-xl font-bold font-headline text-on-surface mb-2">No hay colecciones</h2>
+                <p class="text-on-surface-variant max-w-md mb-8">
+                    Las colecciones agrupan tus documentos por temática. Crea tu primera colección para empezar a
+                    indexar documentos.
+                </p>
+                <button appButton [ngpDialogTrigger]="createCollectionDialog" (click)="openCreateForm()">
+                    <svg [lucideIcon]="LucideCirclePlus" [size]="16"></svg>
+                    Crear primera colección
+                </button>
             </div>
-            <h3 class="text-xl font-bold font-headline text-on-surface mb-2">No hay colecciones</h3>
-            <p class="text-on-surface-variant max-w-md mb-8">
-                Las colecciones agrupan tus documentos por temática. Crea tu primera colección para empezar a indexar
-                documentos.
-            </p>
-            <button
-                [ngpDialogTrigger]="createCollectionDialog"
-                (click)="openCreateForm()"
-                class="bg-linear-to-r from-primary to-primary-container text-on-primary px-6 py-3 rounded-lg font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-95 transition-all cursor-pointer"
-            >
-                <svg [lucideIcon]="LucideCirclePlus" [size]="14"></svg>
-                Crear Primera Colección
-            </button>
-        </div>
         }
     } @else {
-        <!-- Collection Grid -->
         <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
             @for (collection of displayedCollections(); track collection.id) {
                 <article
@@ -74,21 +74,26 @@
                     (keydown.enter)="openCollection(collection.id)"
                     tabindex="0"
                     role="link"
-                    class="group bg-surface-container-lowest p-8 rounded-xl ring-1 ring-transparent hover:ring-primary/30 transition-all duration-200 cursor-pointer focus:outline-2 focus:outline-primary"
+                    [attr.aria-label]="'Abrir colección ' + collection.name"
+                    class="group bg-surface-container-lowest p-6 rounded-xl ring-1 ring-transparent hover:ring-primary/30 transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-surface-tint"
                 >
-                    <div class="flex justify-between items-start mb-6">
+                    <div class="flex justify-between items-start mb-4">
                         <div class="p-3 bg-surface-container-low rounded-lg group-hover:bg-primary/5 transition-colors">
                             <svg [lucideIcon]="LucideFolderOpen" class="text-primary" [size]="20"></svg>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-on-surface-variant">
                                 {{ formatDate(collection.created_at) }}
                             </span>
                             <button
+                                appButton
+                                variant="ghost-danger"
+                                size="icon-sm"
                                 (click)="requestDeleteCollection($event, collection.id)"
+                                (keydown.enter)="$event.stopPropagation()"
                                 [ngpDialogTrigger]="confirmDeleteDialog"
+                                [ngpTooltipTrigger]="'Eliminar colección'"
                                 [disabled]="deleting() === collection.id"
-                                class="p-1.5 text-on-surface-variant hover:text-error transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
                                 aria-label="Eliminar colección"
                             >
                                 @if (deleting() === collection.id) {
@@ -99,22 +104,21 @@
                             </button>
                         </div>
                     </div>
-                    <h3 class="text-xl font-bold text-on-surface mb-2 font-headline">{{ collection.name }}</h3>
-                    <p class="text-on-surface-variant text-sm line-clamp-2 mb-6">
-                        {{ collection.description ?? 'Sin descripción' }}
+                    <h3 class="text-lg font-bold text-on-surface mb-1 font-headline">{{ collection.name }}</h3>
+                    <p class="text-on-surface-variant text-sm line-clamp-2 mb-4 min-h-5">
+                        {{ collection.description }}
                     </p>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <svg [lucideIcon]="LucideFileText" class="text-on-surface-variant" [size]="14"></svg>
-                            <span class="text-xs font-semibold text-on-surface-variant"
-                                >{{ collection.document_count }} Documentos</span
-                            >
-                        </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="flex items-center gap-2 text-on-surface-variant">
+                            <svg [lucideIcon]="LucideFileText" [size]="14"></svg>
+                            {{ collection.document_count }}
+                            {{ collection.document_count === 1 ? 'documento' : 'documentos' }}
+                        </span>
                         <span
-                            class="text-primary font-bold text-xs uppercase tracking-widest flex items-center gap-1 group-hover:gap-2 transition-all"
+                            class="text-primary font-semibold flex items-center gap-1 group-hover:gap-2 transition-all"
                         >
                             Abrir
-                            <svg [lucideIcon]="LucideArrowRight" [size]="12"></svg>
+                            <svg [lucideIcon]="LucideArrowRight" [size]="14"></svg>
                         </span>
                     </div>
                 </article>
@@ -127,65 +131,42 @@
     <div ngpDialogOverlay class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
         <div ngpDialog class="bg-surface-container-lowest rounded-2xl p-8 shadow-2xl w-full max-w-lg mx-4">
             <div class="flex items-center justify-between mb-6">
-                <h2 ngpDialogTitle class="text-lg font-bold font-headline text-on-surface">Crear nueva colección</h2>
-                <button
-                    (click)="close()"
-                    class="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer rounded-full hover:bg-surface-container-high"
-                    aria-label="Cerrar"
-                >
+                <h2 ngpDialogTitle class="text-lg font-bold font-headline text-on-surface">Nueva colección</h2>
+                <button appButton variant="ghost" size="icon-sm" (click)="close()" aria-label="Cerrar">
                     <svg [lucideIcon]="LucideX" class="size-5"></svg>
                 </button>
             </div>
             <p ngpDialogDescription class="sr-only">Formulario para crear una nueva colección de documentos</p>
             <form [formGroup]="createForm" (ngSubmit)="submitCreate(close)" class="space-y-4">
                 <div>
-                    <label
-                        for="col-name"
-                        class="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2"
-                    >
-                        Nombre
-                    </label>
+                    <label for="col-name" class="block text-sm font-medium text-on-surface mb-1.5">Nombre</label>
                     <input
                         id="col-name"
                         formControlName="name"
                         type="text"
                         class="w-full px-4 py-3 bg-surface-container-high rounded-lg text-sm text-on-surface focus:bg-surface-container-lowest focus:outline-2 focus:outline-surface-tint transition-all outline-none"
-                        placeholder="Ej: Investigación Cuántica 2024"
+                        placeholder="Ej.: Estadística, tema 1"
                     />
                 </div>
                 <div>
-                    <label
-                        for="col-desc"
-                        class="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2"
-                    >
-                        Descripción
+                    <label for="col-desc" class="block text-sm font-medium text-on-surface mb-1.5">
+                        Descripción <span class="font-normal text-on-surface-variant">(opcional)</span>
                     </label>
                     <textarea
                         id="col-desc"
                         formControlName="description"
                         rows="3"
                         class="w-full px-4 py-3 bg-surface-container-high rounded-lg text-sm text-on-surface focus:bg-surface-container-lowest focus:outline-2 focus:outline-surface-tint transition-all resize-none outline-none"
-                        placeholder="Opcional: describe el propósito de esta colección..."
+                        placeholder="¿Qué documentos vas a guardar aquí?"
                     ></textarea>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                    <button
-                        type="button"
-                        (click)="close()"
-                        class="px-6 py-3 text-on-surface-variant font-bold text-xs uppercase tracking-widest rounded-md hover:bg-surface-container-high transition-colors cursor-pointer"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        [disabled]="createForm.invalid || creating()"
-                        class="px-6 py-3 bg-linear-to-r from-primary to-primary-container text-on-primary font-bold text-xs uppercase tracking-widest rounded-md hover:opacity-90 transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2"
-                    >
+                    <button type="button" appButton variant="ghost" (click)="close()">Cancelar</button>
+                    <button type="submit" appButton [disabled]="createForm.invalid || creating()">
                         @if (creating()) {
                             <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
-                        } @else {
-                            Crear Colección
                         }
+                        Crear colección
                     </button>
                 </div>
             </form>
@@ -199,21 +180,13 @@
             <h2 ngpDialogTitle class="text-lg font-bold font-headline text-on-surface mb-2">Eliminar colección</h2>
             <p ngpDialogDescription class="text-sm text-on-surface-variant mb-6">
                 ¿Seguro que quieres eliminar
-                <span class="font-semibold text-on-surface">{{ pendingDeleteCollection()?.name }}</span>?
-                Se eliminarán también todos sus documentos. Esta acción es irreversible.
+                <span class="font-semibold text-on-surface">{{ pendingDeleteCollection()?.name }}</span>? Se
+                eliminarán también todos sus documentos. Esta acción es irreversible.
             </p>
             <div class="flex justify-end gap-3">
-                <button
-                    (click)="close()"
-                    class="px-5 py-2.5 text-on-surface-variant font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
-                >
-                    Cancelar
-                </button>
-                <button
-                    (click)="confirmDeleteCollection(close)"
-                    class="px-5 py-2.5 bg-error text-on-error font-bold text-xs uppercase tracking-widest rounded-lg hover:opacity-90 transition-all cursor-pointer flex items-center gap-2"
-                >
-                    <svg [lucideIcon]="LucideTrash2" class="size-3.5"></svg>
+                <button appButton variant="ghost" (click)="close()">Cancelar</button>
+                <button appButton variant="danger" (click)="confirmDeleteCollection(close)">
+                    <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
                     Eliminar
                 </button>
             </div>

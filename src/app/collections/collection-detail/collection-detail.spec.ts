@@ -488,7 +488,7 @@ describe('CollectionDetail', () => {
         fixture.detectChanges();
     });
 
-    it('should trigger file select through header label', () => {
+    it('should keep a file input for uploads', () => {
         const fixture = createFixture();
         initWithData(fixture);
 

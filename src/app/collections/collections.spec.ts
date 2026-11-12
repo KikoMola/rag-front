@@ -341,7 +341,7 @@ describe('Collections', () => {
         fixture.detectChanges();
 
         const html = fixture.nativeElement.innerHTML;
-        expect(html).toContain('resultado(s) para');
+        expect(html).toContain('resultados para');
         vi.useRealTimers();
     });
 
@@ -395,7 +395,6 @@ describe('Collections', () => {
         const html = fixture.nativeElement.innerHTML;
         expect(html).toContain('Collection A');
         expect(html).toContain('Desc A');
-        expect(html).toContain('Sin descripción');
     });
 
     it('should navigate when clicking a collection card', () => {
@@ -437,7 +436,7 @@ describe('Collections', () => {
         fixture.detectChanges();
 
         const html = fixture.nativeElement.innerHTML;
-        expect(html).toContain('Crear Primera Colección');
+        expect(html).toContain('Crear primera colección');
     });
 
     it('should handle search error gracefully', async () => {

@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { Router, RouterLink } from '@angular/router';
 import {
     LucideDynamicIcon,
-    LucideCirclePlus,
     LucideDatabase,
     LucideFileText,
     LucideArrowRight,
@@ -10,13 +9,17 @@ import {
     LucideAlertCircle,
     LucideClock,
     LucideCpu,
+    LucideFolderOpen,
+    LucideMessageSquare,
 } from '@lucide/angular';
 import { DashboardService } from '../core/services/dashboard.service';
 import type { DashboardData } from '../core/services/dashboard.service';
+import { AppButton } from '../shared/ui/button';
+import { PageHeader } from '../shared/ui/page-header';
 
 @Component({
     selector: 'app-dashboard',
-    imports: [LucideDynamicIcon, RouterLink],
+    imports: [LucideDynamicIcon, RouterLink, AppButton, PageHeader],
     templateUrl: './dashboard.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -24,7 +27,8 @@ export class Dashboard implements OnInit {
     private readonly dashboardService = inject(DashboardService);
     private readonly router = inject(Router);
 
-    protected readonly LucideCirclePlus = LucideCirclePlus;
+    protected readonly LucideFolderOpen = LucideFolderOpen;
+    protected readonly LucideMessageSquare = LucideMessageSquare;
     protected readonly LucideFileText = LucideFileText;
     protected readonly LucideArrowRight = LucideArrowRight;
     protected readonly LucideDatabase = LucideDatabase;

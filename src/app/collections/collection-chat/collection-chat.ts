@@ -24,12 +24,16 @@ import {
     LucideFileText,
     LucideSquare,
 } from '@lucide/angular';
+import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
 import { map, of, Subscription, switchMap, tap } from 'rxjs';
 import { CollectionsService } from '../../core/services/collections.service';
 import { ChatService } from '../../core/services/chat.service';
 import { MarkdownPipe } from '../../core/pipes/markdown.pipe';
 import type { Collection } from '../../core/models/collection.model';
 import type { Source } from '../../core/models/conversation.model';
+import { AppButton } from '../../shared/ui/button';
+import { PageHeader } from '../../shared/ui/page-header';
+import { ToastService } from '../../shared/ui/toast';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
@@ -42,7 +46,7 @@ interface ChatMessage {
 
 @Component({
     selector: 'app-collection-chat',
-    imports: [RouterLink, LucideDynamicIcon, MarkdownPipe],
+    imports: [RouterLink, LucideDynamicIcon, MarkdownPipe, NgpTooltipTrigger, AppButton, PageHeader],
     templateUrl: './collection-chat.html',
     styleUrl: './collection-chat.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,6 +68,7 @@ export class CollectionChat implements OnInit, OnDestroy {
     private readonly router = inject(Router);
     private readonly collectionsService = inject(CollectionsService);
     private readonly chatService = inject(ChatService);
+    private readonly toast = inject(ToastService);
 
     private streamSub: Subscription | null = null;
 
@@ -104,7 +109,10 @@ export class CollectionChat implements OnInit, OnDestroy {
                 this.collection.set(match ?? null);
                 this.loading.set(false);
             },
-            error: () => this.loading.set(false),
+            error: () => {
+                this.loading.set(false);
+                this.toast.error('No se pudo cargar la colección. Comprueba que el backend está en marcha.');
+            },
         });
     }
 

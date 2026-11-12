@@ -10,6 +10,7 @@ import {
     LucideMessageSquare,
     LucideScanText,
 } from '@lucide/angular';
+import { AppButton } from '../../shared/ui/button';
 
 interface NavItem {
     label: string;
@@ -19,7 +20,7 @@ interface NavItem {
 
 @Component({
     selector: 'app-sidebar',
-    imports: [RouterLink, RouterLinkActive, LucideDynamicIcon],
+    imports: [RouterLink, RouterLinkActive, LucideDynamicIcon, AppButton],
     templateUrl: './sidebar.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -28,9 +29,9 @@ export class Sidebar {
     protected readonly LucideCirclePlus = LucideCirclePlus;
 
     protected readonly navItems = signal<NavItem[]>([
-        { label: 'Dashboard', icon: LucideBrain, route: '/' },
+        { label: 'Inicio', icon: LucideBrain, route: '/' },
         { label: 'Chat', icon: LucideMessageSquare, route: '/chat' },
-        { label: 'Collections', icon: LucideFolderOpen, route: '/collections' },
+        { label: 'Colecciones', icon: LucideFolderOpen, route: '/collections' },
         { label: 'OCR', icon: LucideScanText, route: '/ocr' },
         { label: 'Audio', icon: LucideHeadphones, route: '/tts' },
     ]);

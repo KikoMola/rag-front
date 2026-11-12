@@ -10,7 +10,7 @@ import {
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
-import { switchMap, catchError, of } from 'rxjs';
+import { switchMap, catchError, of, EMPTY } from 'rxjs';
 import {
     LucideDynamicIcon,
     LucideScanText,
@@ -33,13 +33,26 @@ import {
     NgpDialogTitle,
     NgpDialogTrigger,
 } from 'ng-primitives/dialog';
-import { Navbar } from '../../layout/navbar/navbar';
+import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
 import { OcrService } from '../../core/services/ocr.service';
 import type { OcrDocumentListItem, OcrStatus } from '../../core/models/ocr-document.model';
+import { AppButton } from '../../shared/ui/button';
+import { PageHeader } from '../../shared/ui/page-header';
+import { ToastService } from '../../shared/ui/toast';
 
 @Component({
     selector: 'app-ocr-list',
-    imports: [LucideDynamicIcon, Navbar, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription],
+    imports: [
+        LucideDynamicIcon,
+        NgpDialogTrigger,
+        NgpDialog,
+        NgpDialogOverlay,
+        NgpDialogTitle,
+        NgpDialogDescription,
+        NgpTooltipTrigger,
+        AppButton,
+        PageHeader,
+    ],
     templateUrl: './ocr-list.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -61,6 +74,7 @@ export class OcrList implements OnInit {
 
     private readonly ocrService = inject(OcrService);
     private readonly router = inject(Router);
+    private readonly toast = inject(ToastService);
 
     readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
@@ -102,11 +116,18 @@ export class OcrList implements OnInit {
         this.error.set(null);
         this.ocrService
             .uploadDocument(file)
-            .pipe(catchError(() => { this.error.set('Error al subir el documento.'); return of(null); }))
+            .pipe(
+                catchError(() => {
+                    this.error.set('Error al subir el documento.');
+                    this.toast.error('No se pudo subir el documento. Comprueba el formato e inténtalo de nuevo.');
+                    return of(null);
+                }),
+            )
             .subscribe((doc) => {
                 this.uploading.set(false);
                 if (doc) {
                     this.documents.update((prev) => [doc, ...prev]);
+                    this.toast.success('Documento subido. El OCR se está procesando.');
                 }
             });
     }
@@ -127,7 +148,14 @@ export class OcrList implements OnInit {
         this.deletingId.set(id);
         this.ocrService
             .deleteDocument(id)
-            .pipe(catchError(() => { this.deletingId.set(null); this.pendingDeleteId.set(null); return of(null); }))
+            .pipe(
+                catchError(() => {
+                    this.deletingId.set(null);
+                    this.pendingDeleteId.set(null);
+                    this.toast.error('No se pudo eliminar el documento.');
+                    return EMPTY;
+                }),
+            )
             .subscribe(() => {
                 this.documents.update((prev) => prev.filter((d) => d.id !== id));
                 this.deletingId.set(null);
@@ -154,7 +182,13 @@ export class OcrList implements OnInit {
         this.downloadingId.set(id);
         this.ocrService
             .getDocument(id)
-            .pipe(catchError(() => { this.downloadingId.set(null); return of(null); }))
+            .pipe(
+                catchError(() => {
+                    this.downloadingId.set(null);
+                    this.toast.error('No se pudo descargar el texto.');
+                    return of(null);
+                }),
+            )
             .subscribe((doc) => {
                 this.downloadingId.set(null);
                 if (!doc?.markdown_content) return;

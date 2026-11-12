@@ -26,12 +26,15 @@ import {
 import { OcrService } from '../../core/services/ocr.service';
 import { MarkdownPipe } from '../../core/pipes/markdown.pipe';
 import type { OcrDocument } from '../../core/models/ocr-document.model';
+import { AppButton } from '../../shared/ui/button';
+import { PageHeader } from '../../shared/ui/page-header';
+import { ToastService } from '../../shared/ui/toast';
 
 const POLL_INTERVAL_MS = 3000;
 
 @Component({
     selector: 'app-ocr-detail',
-    imports: [RouterLink, LucideDynamicIcon, MarkdownPipe],
+    imports: [RouterLink, LucideDynamicIcon, MarkdownPipe, AppButton, PageHeader],
     templateUrl: './ocr-detail.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'flex flex-col h-full overflow-hidden' },
@@ -52,6 +55,7 @@ export class OcrDetail implements OnInit, OnDestroy {
     private readonly ocrService = inject(OcrService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
+    private readonly toast = inject(ToastService);
 
     document = signal<OcrDocument | null>(null);
     loading = signal(true);
@@ -95,10 +99,14 @@ export class OcrDetail implements OnInit, OnDestroy {
     copyMarkdown(): void {
         const content = this.document()?.markdown_content;
         if (!content) return;
-        navigator.clipboard.writeText(content).then(() => {
-            this.copySuccess.set(true);
-            setTimeout(() => this.copySuccess.set(false), 2000);
-        });
+        navigator.clipboard.writeText(content).then(
+            () => {
+                this.copySuccess.set(true);
+                this.toast.success('Texto copiado al portapapeles.');
+                setTimeout(() => this.copySuccess.set(false), 2000);
+            },
+            () => this.toast.error('No se pudo copiar al portapapeles.'),
+        );
     }
 
     formatBytes(bytes: number): string {

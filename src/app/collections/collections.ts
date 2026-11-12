@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, EMPTY, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError, map } from 'rxjs/operators';
@@ -22,15 +22,29 @@ import {
     NgpDialogTitle,
     NgpDialogTrigger,
 } from 'ng-primitives/dialog';
+import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
 import { CollectionsService } from '../core/services/collections.service';
 import { DashboardService } from '../core/services/dashboard.service';
 import { SearchService } from '../core/services/search.service';
-import { Navbar } from '../layout/navbar/navbar';
 import type { Collection } from '../core/models/collection.model';
+import { AppButton } from '../shared/ui/button';
+import { PageHeader } from '../shared/ui/page-header';
+import { ToastService } from '../shared/ui/toast';
 
 @Component({
     selector: 'app-collections',
-    imports: [ReactiveFormsModule, LucideDynamicIcon, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription, Navbar],
+    imports: [
+        ReactiveFormsModule,
+        LucideDynamicIcon,
+        NgpDialogTrigger,
+        NgpDialog,
+        NgpDialogOverlay,
+        NgpDialogTitle,
+        NgpDialogDescription,
+        NgpTooltipTrigger,
+        AppButton,
+        PageHeader,
+    ],
     templateUrl: './collections.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -49,6 +63,7 @@ export class Collections implements OnInit {
     private readonly searchService = inject(SearchService);
     private readonly router = inject(Router);
     private readonly fb = inject(FormBuilder);
+    private readonly toast = inject(ToastService);
 
     collections = signal<Collection[]>([]);
     loading = signal(true);
@@ -73,6 +88,9 @@ export class Collections implements OnInit {
     });
 
     constructor() {
+        // La búsqueda es propia de esta pantalla: se vacía al salir
+        inject(DestroyRef).onDestroy(() => this.searchService.query.set(''));
+
         const searchSubject = new Subject<string>();
 
         effect(() => searchSubject.next(this.searchService.query()));
@@ -112,7 +130,10 @@ export class Collections implements OnInit {
                 this.collections.set(collections);
                 this.loading.set(false);
             },
-            error: () => this.loading.set(false),
+            error: () => {
+                this.loading.set(false);
+                this.toast.error('No se pudieron cargar las colecciones. Comprueba que el backend está en marcha.');
+            },
         });
     }
 
@@ -129,8 +150,12 @@ export class Collections implements OnInit {
                 this.creating.set(false);
                 close();
                 this.collections.update((list) => [collection, ...list]);
+                this.toast.success(`Colección «${collection.name}» creada.`);
             },
-            error: () => this.creating.set(false),
+            error: () => {
+                this.creating.set(false);
+                this.toast.error('No se pudo crear la colección. Inténtalo de nuevo.');
+            },
         });
     }
 
@@ -150,10 +175,12 @@ export class Collections implements OnInit {
                 this.searchResults.update((res) => (res ? res.filter((c) => c.id !== id) : null));
                 this.deleting.set(null);
                 this.pendingDeleteCollectionId.set(null);
+                this.toast.success('Colección eliminada.');
             },
             error: () => {
                 this.deleting.set(null);
                 this.pendingDeleteCollectionId.set(null);
+                this.toast.error('No se pudo eliminar la colección.');
             },
         });
     }

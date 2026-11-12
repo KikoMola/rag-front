@@ -20,9 +20,9 @@ describe('Sidebar', () => {
         fixture.detectChanges();
         const items = fixture.componentInstance['navItems']();
         expect(items).toHaveLength(5);
-        expect(items[0].label).toBe('Dashboard');
+        expect(items[0].label).toBe('Inicio');
         expect(items[1].label).toBe('Chat');
-        expect(items[2].label).toBe('Collections');
+        expect(items[2].label).toBe('Colecciones');
         expect(items[3].label).toBe('OCR');
         expect(items[4].label).toBe('Audio');
     });
@@ -37,8 +37,7 @@ describe('Sidebar', () => {
     it('should render logo section', () => {
         const fixture = TestBed.createComponent(Sidebar);
         fixture.detectChanges();
-        const h1 = fixture.nativeElement.querySelector('h1');
-        expect(h1?.textContent).toContain('RAG Chat');
+        expect(fixture.nativeElement.textContent).toContain('RAG Chat');
     });
 
     it('should render "Nueva Colección" button', () => {

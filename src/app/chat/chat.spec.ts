@@ -227,7 +227,8 @@ describe('Chat', () => {
 
     describe('selectModel', () => {
         it('updates the selectedModel signal', () => {
-            const thinkingModel = { id: 'thinking', label: 'Thinking', emoji: '🧠', model: 'gemma4:26b' };
+            const thinkingModel = component['models'].find((m) => m.id === 'thinking')!;
+            expect(thinkingModel.label).toBe('Razonamiento');
             component.selectModel(thinkingModel);
             expect(component.selectedModel()).toEqual(thinkingModel);
         });
@@ -327,7 +328,7 @@ describe('Chat', () => {
 
         it('calls chatService.sendMessage with the question and selected model', () => {
             component.conversationId.set(5);
-            component.selectedModel.set({ id: 'coding', label: 'Coding', emoji: '💻', model: 'qwen3.6:27b' });
+            component.selectedModel.set(component['models'][2]);
             component.inputValue.set('hello');
             component.sendMessage();
             expect(mockChatService.sendMessage).toHaveBeenCalledWith(5, 'hello', 'qwen3.6:27b');

@@ -26,9 +26,12 @@ import {
     NgpDialogTitle,
     NgpDialogTrigger,
 } from 'ng-primitives/dialog';
-import { Navbar } from '../layout/navbar/navbar';
+import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
 import { TtsService } from '../core/services/tts.service';
 import type { TtsAudioListItem, TtsVoice } from '../core/models/tts-audio.model';
+import { AppButton } from '../shared/ui/button';
+import { PageHeader } from '../shared/ui/page-header';
+import { ToastService } from '../shared/ui/toast';
 
 const POLL_INTERVAL_MS = 2000;
 const ACCEPTED_EXTENSIONS = ['.pdf', '.docx', '.epub', '.html', '.htm', '.txt', '.md'];
@@ -45,12 +48,14 @@ interface VoiceGroup {
     imports: [
         ReactiveFormsModule,
         LucideDynamicIcon,
-        Navbar,
         NgpDialogTrigger,
         NgpDialog,
         NgpDialogOverlay,
         NgpDialogTitle,
         NgpDialogDescription,
+        NgpTooltipTrigger,
+        AppButton,
+        PageHeader,
     ],
     templateUrl: './tts.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -74,6 +79,7 @@ export class Tts implements OnInit {
 
     private readonly ttsService = inject(TtsService);
     private readonly fb = inject(FormBuilder);
+    private readonly toast = inject(ToastService);
 
     readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
@@ -126,7 +132,10 @@ export class Tts implements OnInit {
                 this.audios.set(audios);
                 this.loading.set(false);
             },
-            error: () => this.loading.set(false),
+            error: () => {
+                this.loading.set(false);
+                this.toast.error('No se pudieron cargar los audios. Comprueba que el backend está en marcha.');
+            },
         });
         this.ttsService.getVoices().subscribe({
             next: ({ voices, default_voice }) => {
@@ -199,6 +208,7 @@ export class Tts implements OnInit {
                 next: (audio) => {
                     this.creating.set(false);
                     this.audios.update((list) => [audio, ...list]);
+                    this.toast.info('Audio en cola. Puedes seguir el progreso en la lista.');
                     close();
                 },
                 error: (err: HttpErrorResponse) => {
@@ -222,10 +232,12 @@ export class Tts implements OnInit {
                 this.audios.update((list) => list.filter((a) => a.id !== id));
                 this.deletingId.set(null);
                 this.pendingDeleteId.set(null);
+                this.toast.success('Audio eliminado.');
             },
             error: () => {
                 this.deletingId.set(null);
                 this.pendingDeleteId.set(null);
+                this.toast.error('No se pudo eliminar el audio.');
             },
         });
     }

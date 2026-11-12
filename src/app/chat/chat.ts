@@ -15,6 +15,7 @@ import {
     LucideBrain,
     LucideCheck,
     LucideChevronDown,
+    LucideCode,
     LucideCopy,
     LucideDynamicIcon,
     LucideGitFork,
@@ -23,12 +24,18 @@ import {
     LucideSparkles,
     LucideSquare,
     LucideTrash2,
+    LucideZap,
 } from '@lucide/angular';
+import type { LucideIconInput } from '@lucide/angular';
+import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
 import { map, of, switchMap, tap } from 'rxjs';
 import type { Subscription } from 'rxjs';
 import { ChatService } from '../core/services/chat.service';
 import { MarkdownPipe } from '../core/pipes/markdown.pipe';
 import type { ConversationListItem } from '../core/models/conversation.model';
+import { AppButton } from '../shared/ui/button';
+import { PageHeader } from '../shared/ui/page-header';
+import { ToastService } from '../shared/ui/toast';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
@@ -42,19 +49,26 @@ interface ChatMessage {
 interface ModelOption {
     id: string;
     label: string;
-    emoji: string;
+    icon: LucideIconInput;
     model: string;
+    hint: string;
 }
 
 const MODELS: ModelOption[] = [
-    { id: 'fast', label: 'Rápido', emoji: '⚡', model: 'gemma3:27b' },
-    { id: 'thinking', label: 'Thinking', emoji: '🧠', model: 'gemma4:26b' },
-    { id: 'coding', label: 'Coding', emoji: '💻', model: 'qwen3.6:27b' },
+    { id: 'fast', label: 'Rápido', icon: LucideZap, model: 'gemma3:27b', hint: 'Respuestas directas' },
+    {
+        id: 'thinking',
+        label: 'Razonamiento',
+        icon: LucideBrain,
+        model: 'gemma4:26b',
+        hint: 'Piensa antes de responder',
+    },
+    { id: 'coding', label: 'Código', icon: LucideCode, model: 'qwen3.6:27b', hint: 'Especializado en programación' },
 ];
 
 @Component({
     selector: 'app-chat',
-    imports: [LucideDynamicIcon, MarkdownPipe],
+    imports: [LucideDynamicIcon, MarkdownPipe, NgpTooltipTrigger, AppButton, PageHeader],
     templateUrl: './chat.html',
     styleUrl: './chat.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,6 +89,7 @@ export class Chat implements OnInit, OnDestroy {
     protected readonly models = MODELS;
 
     private readonly chatService = inject(ChatService);
+    private readonly toast = inject(ToastService);
     private streamSub: Subscription | null = null;
 
     readonly messagesContainer = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
@@ -90,6 +105,10 @@ export class Chat implements OnInit, OnDestroy {
     copiedIndex = signal<number | null>(null);
 
     hasMessages = computed(() => this.messages().length > 0);
+    currentTitle = computed(() => {
+        const id = this.conversationId();
+        return this.conversations().find((c) => c.id === id)?.title ?? 'Nueva conversación';
+    });
 
     constructor() {
         effect(() => {
@@ -106,7 +125,10 @@ export class Chat implements OnInit, OnDestroy {
                 this.conversations.set(convs.filter((c) => c.mode === 'general'));
                 this.loadingConversations.set(false);
             },
-            error: () => this.loadingConversations.set(false),
+            error: () => {
+                this.loadingConversations.set(false);
+                this.toast.error('No se pudo cargar el historial. Comprueba que el backend está en marcha.');
+            },
         });
     }
 
@@ -136,6 +158,7 @@ export class Chat implements OnInit, OnDestroy {
                 );
                 this.expandedThinking.set(new Set());
             },
+            error: () => this.toast.error('No se pudo abrir la conversación.'),
         });
     }
 
@@ -149,7 +172,9 @@ export class Chat implements OnInit, OnDestroy {
                     this.messages.set([]);
                     this.conversationId.set(null);
                 }
+                this.toast.success('Conversación eliminada.');
             },
+            error: () => this.toast.error('No se pudo eliminar la conversación.'),
         });
     }
 
@@ -275,10 +300,13 @@ export class Chat implements OnInit, OnDestroy {
     }
 
     copyMessage(content: string, index: number): void {
-        navigator.clipboard.writeText(content).then(() => {
-            this.copiedIndex.set(index);
-            setTimeout(() => this.copiedIndex.set(null), 2000);
-        });
+        navigator.clipboard.writeText(content).then(
+            () => {
+                this.copiedIndex.set(index);
+                setTimeout(() => this.copiedIndex.set(null), 2000);
+            },
+            () => this.toast.error('No se pudo copiar al portapapeles.'),
+        );
     }
 
     forkFromMessage(messageId: number): void {
@@ -299,9 +327,11 @@ export class Chat implements OnInit, OnDestroy {
                             }))
                         );
                         this.expandedThinking.set(new Set());
+                        this.toast.success('Bifurcación creada a partir de ese mensaje.');
                     },
                 });
             },
+            error: () => this.toast.error('No se pudo bifurcar la conversación.'),
         });
     }
 

@@ -24,9 +24,13 @@ import {
     NgpDialogTitle,
     NgpDialogTrigger,
 } from 'ng-primitives/dialog';
+import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
 import { EMPTY, switchMap, catchError } from 'rxjs';
 import { CollectionsService } from '../../core/services/collections.service';
 import type { Collection, CollectionDocument, DocumentStatus } from '../../core/models/collection.model';
+import { AppButton } from '../../shared/ui/button';
+import { PageHeader } from '../../shared/ui/page-header';
+import { ToastService } from '../../shared/ui/toast';
 
 const FORMAT_ICONS: Record<string, LucideIconInput> = {
     pdf: LucideFileText,
@@ -39,7 +43,19 @@ const FORMAT_ICONS: Record<string, LucideIconInput> = {
 
 @Component({
     selector: 'app-collection-detail',
-    imports: [RouterLink, DecimalPipe, LucideDynamicIcon, NgpDialogTrigger, NgpDialog, NgpDialogOverlay, NgpDialogTitle, NgpDialogDescription],
+    imports: [
+        RouterLink,
+        DecimalPipe,
+        LucideDynamicIcon,
+        NgpDialogTrigger,
+        NgpDialog,
+        NgpDialogOverlay,
+        NgpDialogTitle,
+        NgpDialogDescription,
+        NgpTooltipTrigger,
+        AppButton,
+        PageHeader,
+    ],
     templateUrl: './collection-detail.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -58,6 +74,7 @@ export class CollectionDetail implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly collectionsService = inject(CollectionsService);
+    private readonly toast = inject(ToastService);
 
     collectionId = signal(0);
     collection = signal<Collection | null>(null);
@@ -111,6 +128,7 @@ export class CollectionDetail implements OnInit {
             }),
             catchError(() => {
                 this.loading.set(false);
+                this.toast.error('No se pudo cargar la colección. Comprueba que el backend está en marcha.');
                 return EMPTY;
             }),
         ).subscribe((docs) => {
@@ -167,8 +185,16 @@ export class CollectionDetail implements OnInit {
                 this.documents.update((list) => [...newDocs, ...list]);
                 this.uploading.set(false);
                 this.pollProcessingDocs();
+                this.toast.success(
+                    newDocs.length === 1
+                        ? 'Documento subido. Se está indexando.'
+                        : `${newDocs.length} documentos subidos. Se están indexando.`,
+                );
             },
-            error: () => this.uploading.set(false),
+            error: () => {
+                this.uploading.set(false);
+                this.toast.error('No se pudieron subir los archivos. Revisa el formato e inténtalo de nuevo.');
+            },
         });
     }
 
@@ -187,10 +213,12 @@ export class CollectionDetail implements OnInit {
                 this.documents.update((list) => list.filter((d) => d.id !== docId));
                 this.deletingDoc.set(null);
                 this.pendingDeleteDocId.set(null);
+                this.toast.success('Documento eliminado.');
             },
             error: () => {
                 this.deletingDoc.set(null);
                 this.pendingDeleteDocId.set(null);
+                this.toast.error('No se pudo eliminar el documento.');
             },
         });
     }

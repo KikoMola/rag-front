@@ -1,48 +1,43 @@
-<!-- Header / Breadcrumb -->
-<header class="sticky top-0 z-40 flex justify-between items-center w-full px-8 py-4 bg-surface/90 backdrop-blur-md border-b border-surface-container">
-    <nav class="flex items-center gap-2 text-sm text-on-surface-variant" aria-label="Breadcrumb">
-        <a
-            routerLink="/ocr"
-            class="flex items-center gap-1.5 hover:text-primary transition-colors"
-            aria-label="Volver al listado OCR"
-        >
-            <svg [lucideIcon]="LucideArrowLeft" [size]="14"></svg>
-            OCR
-        </a>
-        <svg [lucideIcon]="LucideChevronRight" [size]="14"></svg>
-        <span class="text-primary font-semibold truncate max-w-xs">
-            {{ document()?.filename ?? '...' }}
-        </span>
-    </nav>
-</header>
-
 @if (loading()) {
-    <!-- Full-page loading -->
     <div class="flex-1 flex items-center justify-center gap-3 text-on-surface-variant">
         <svg [lucideIcon]="LucideLoader" [size]="24" class="animate-spin text-primary"></svg>
         <span class="text-sm">Cargando documento...</span>
     </div>
 } @else if (!document()) {
-    <!-- Error / not found -->
     <div class="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
         <svg [lucideIcon]="LucideAlertCircle" [size]="40" class="text-error"></svg>
-        <h3 class="text-lg font-bold text-on-surface font-headline">Documento no encontrado</h3>
-        <a routerLink="/ocr" class="text-sm text-primary hover:underline">Volver al listado</a>
+        <h1 class="text-lg font-bold text-on-surface font-headline">Documento no encontrado</h1>
+        <a appButton variant="secondary" routerLink="/ocr">Volver al listado</a>
     </div>
 } @else {
-    <!-- Split workspace -->
-    <div class="flex-1 flex overflow-hidden gap-6 p-6 pt-4">
+    <app-page-header
+        class="px-6 lg:px-10 pt-8 pb-6 shrink-0"
+        [title]="document()!.filename"
+        [crumbs]="[{ label: 'OCR', link: '/ocr' }, { label: document()!.filename }]"
+    >
+        <span pageSubtitle>
+            <span class="uppercase">{{ document()!.format }}</span> · {{ formatBytes(document()!.size_bytes) }}
+            @if (document()!.page_count > 1) {
+                · {{ document()!.page_count }} páginas
+            }
+        </span>
+        @if (document()!.status === 'done') {
+            <button pageActions appButton variant="secondary" (click)="copyMarkdown()">
+                <svg [lucideIcon]="copySuccess() ? LucideCheckCircle : LucideCopy" class="size-4"></svg>
+                {{ copySuccess() ? 'Copiado' : 'Copiar texto' }}
+            </button>
+        }
+    </app-page-header>
 
-        <!-- Left pane: File metadata + status -->
+    <div class="flex-1 flex overflow-hidden gap-6 px-6 lg:px-10 pb-6">
+        <!-- Left: file and status -->
         <aside class="w-72 shrink-0 flex flex-col gap-4">
-
-            <!-- File icon card -->
-            <div class="bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col">
+            <div class="bg-surface-container-lowest rounded-xl overflow-hidden">
                 @if (document()!.thumbnail_b64) {
                     <img
                         [src]="document()!.thumbnail_b64"
-                        [alt]="document()!.filename"
-                        class="w-full object-cover max-h-64"
+                        [alt]="'Vista previa de ' + document()!.filename"
+                        class="w-full object-cover max-h-72"
                     />
                 } @else {
                     <div class="w-full h-40 bg-surface-container-high flex items-center justify-center">
@@ -53,17 +48,10 @@
                         ></svg>
                     </div>
                 }
-                <div class="p-4 text-center">
-                    <h2 class="font-bold text-on-surface font-headline text-sm break-all">{{ document()!.filename }}</h2>
-                    <p class="text-xs text-on-surface-variant uppercase tracking-wide mt-1">
-                        {{ document()!.format }} · {{ formatBytes(document()!.size_bytes) }}
-                    </p>
-                </div>
             </div>
 
-            <!-- Status card -->
-            <div class="bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-3">
-                <h3 class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Estado</h3>
+            <section class="bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-3">
+                <h2 class="text-sm font-semibold text-on-surface-variant">Estado</h2>
 
                 @switch (document()!.status) {
                     @case ('done') {
@@ -91,10 +79,10 @@
                         <div class="flex flex-col gap-1">
                             <div class="flex items-center gap-2 text-error">
                                 <svg [lucideIcon]="LucideAlertCircle" [size]="18"></svg>
-                                <span class="text-sm font-semibold">Error en OCR</span>
+                                <span class="text-sm font-semibold">Error en el OCR</span>
                             </div>
                             @if (document()!.error_message) {
-                                <p class="text-xs text-on-surface-variant mt-1">{{ document()!.error_message }}</p>
+                                <p class="text-sm text-on-surface-variant mt-1">{{ document()!.error_message }}</p>
                             }
                         </div>
                     }
@@ -104,32 +92,19 @@
                     <svg [lucideIcon]="LucideCalendar" [size]="12"></svg>
                     {{ formatDate(document()!.created_at) }}
                 </div>
-            </div>
-
+            </section>
         </aside>
 
-        <!-- Right pane: Markdown content -->
-        <main class="flex-1 bg-surface-container-lowest rounded-xl flex flex-col overflow-hidden">
-            <!-- Pane header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b border-surface-container-low shrink-0">
-                <h2 class="flex items-center gap-2 font-bold text-on-surface font-headline text-sm">
-                    <svg [lucideIcon]="LucideScanText" [size]="16" class="text-primary"></svg>
-                    Texto extraído
-                </h2>
-
-                @if (document()!.status === 'done') {
-                    <button
-                        (click)="copyMarkdown()"
-                        class="flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-primary transition-colors px-3 py-1.5 rounded-md hover:bg-surface-container-high"
-                        aria-label="Copiar markdown al portapapeles"
-                    >
-                        <svg [lucideIcon]="copySuccess() ? LucideCheckCircle : LucideCopy" [size]="13"></svg>
-                        {{ copySuccess() ? 'Copiado' : 'Copiar' }}
-                    </button>
-                }
+        <!-- Right: extracted text -->
+        <section
+            class="flex-1 min-w-0 bg-surface-container-lowest rounded-xl flex flex-col overflow-hidden"
+            aria-label="Texto extraído"
+        >
+            <div class="flex items-center gap-2 px-6 py-4 border-b border-surface-container shrink-0">
+                <svg [lucideIcon]="LucideScanText" [size]="16" class="text-primary"></svg>
+                <h2 class="font-bold text-on-surface font-headline text-sm">Texto extraído</h2>
             </div>
 
-            <!-- Content area -->
             <div class="flex-1 overflow-y-auto p-6">
                 @switch (document()!.status) {
                     @case ('done') {
@@ -139,36 +114,41 @@
                         ></div>
                     }
                     @case ('processing') {
-                        <div class="flex flex-col items-center justify-center h-full gap-4 text-center text-on-surface-variant">
+                        <div
+                            class="flex flex-col items-center justify-center h-full gap-4 text-center text-on-surface-variant"
+                        >
                             <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center">
                                 <svg [lucideIcon]="LucideScanText" [size]="28" class="text-primary animate-pulse"></svg>
                             </div>
                             <div>
-                                <p class="font-semibold text-on-surface text-sm">El modelo deepseek-ocr está procesando el documento</p>
-                                <p class="text-xs mt-1">Se actualizará automáticamente cuando termine</p>
+                                <p class="font-semibold text-on-surface text-sm">
+                                    El modelo deepseek-ocr está procesando el documento
+                                </p>
+                                <p class="text-sm mt-1">Se actualizará automáticamente cuando termine.</p>
                             </div>
                         </div>
                     }
                     @case ('pending') {
-                        <div class="flex flex-col items-center justify-center h-full gap-4 text-center text-on-surface-variant">
+                        <div
+                            class="flex flex-col items-center justify-center h-full gap-4 text-center text-on-surface-variant"
+                        >
                             <svg [lucideIcon]="LucideClock" [size]="36"></svg>
-                            <p class="text-sm font-semibold text-on-surface">En cola — esperando procesamiento</p>
+                            <p class="text-sm font-semibold text-on-surface">En cola, esperando a que empiece el OCR</p>
                         </div>
                     }
                     @case ('error') {
                         <div class="flex flex-col items-center justify-center h-full gap-4 text-center">
                             <svg [lucideIcon]="LucideAlertCircle" [size]="36" class="text-error"></svg>
                             <div>
-                                <p class="font-semibold text-on-surface text-sm">El procesamiento OCR falló</p>
+                                <p class="font-semibold text-on-surface text-sm">El OCR ha fallado</p>
                                 @if (document()!.error_message) {
-                                    <p class="text-xs text-on-surface-variant mt-1">{{ document()!.error_message }}</p>
+                                    <p class="text-sm text-on-surface-variant mt-1">{{ document()!.error_message }}</p>
                                 }
                             </div>
                         </div>
                     }
                 }
             </div>
-        </main>
-
+        </section>
     </div>
 }
