@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-8 px-6 py-8 lg:px-10 pb-24">
+<div class="flex flex-col gap-6 px-6 py-8 lg:px-10 pb-24 max-w-6xl">
     @if (loading()) {
         <div class="flex items-center justify-center py-24">
             <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin"></svg>
@@ -13,225 +13,211 @@
             [title]="collection()!.name"
             [crumbs]="[{ label: 'Colecciones', link: '/collections' }, { label: collection()!.name }]"
         >
-            <span pageSubtitle>
+            <span pageSubtitle class="tabular-nums">
                 {{ documents().length }} {{ documents().length === 1 ? 'documento' : 'documentos' }} ·
-                {{ totalSize() }}
+                {{ totalChunks() | number }} fragmentos · {{ totalSize() }}
+                @if (indexedCount() < documents().length) {
+                    · {{ indexedCount() }} de {{ documents().length }} indexados
+                }
             </span>
             <button pageActions appButton variant="secondary" [disabled]="uploading()" (click)="openFilePicker()">
-                <svg [lucideIcon]="LucideUpload" class="size-4"></svg>
+                @if (uploading()) {
+                    <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
+                } @else {
+                    <svg [lucideIcon]="LucideUpload" class="size-4"></svg>
+                }
                 Subir documentos
             </button>
-            <a pageActions appButton [routerLink]="['/collections', collectionId(), 'chat']">
-                <svg [lucideIcon]="LucideMessageSquare" class="size-4"></svg>
-                Chatear con la colección
-            </a>
+            @if (indexedCount() > 0) {
+                <a pageActions appButton [routerLink]="['/collections', collectionId(), 'chat']">
+                    <svg [lucideIcon]="LucideMessageSquare" class="size-4"></svg>
+                    Chatear con la colección
+                </a>
+            }
         </app-page-header>
 
-        <div class="grid grid-cols-12 gap-8">
-            <!-- Main column -->
-            <div class="col-span-12 lg:col-span-8 space-y-6">
-                <!-- Drag & Drop Zone -->
-                <div
-                    (dragover)="onDragOver($event)"
-                    (dragleave)="onDragLeave()"
-                    (drop)="onDrop($event)"
-                    (click)="openFilePicker()"
-                    class="relative group bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer"
-                    [class.bg-primary/10]="dragging()"
-                    [class.border-primary]="dragging()"
-                    [class.scale-[1.01]]="dragging()"
-                    [class.shadow-lg]="dragging()"
-                    [class.hover:bg-surface-container]="!dragging()"
-                    [class.border-outline-variant/30]="!dragging()"
-                    style="border: 2px dashed"
-                >
-                    <input
-                        #dropZoneInput
-                        type="file"
-                        multiple
-                        accept=".pdf,.docx,.epub,.html,.htm,.txt,.md"
-                        class="hidden"
-                        (change)="onFileSelect($event)"
-                    />
-                    @if (uploading()) {
-                        <svg [lucideIcon]="LucideLoader" class="size-8 text-primary animate-spin mb-4"></svg>
-                        <h2 class="font-headline font-bold text-on-surface">Subiendo archivos...</h2>
-                    } @else if (dragging()) {
-                        <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                            <svg [lucideIcon]="LucideCloudUpload" class="size-8 text-primary"></svg>
-                        </div>
-                        <h2 class="font-headline font-bold text-primary">Suelta los archivos aquí</h2>
-                        <p class="text-sm text-primary/70 max-w-xs mt-1">Listos para subir</p>
-                    } @else {
-                        <div
-                            class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm group-hover:bg-primary/5 group-hover:shadow-md transition-all duration-200"
-                        >
-                            <svg
-                                [lucideIcon]="LucideCloudUpload"
-                                class="size-8 text-primary group-hover:scale-110 transition-transform duration-200"
-                            ></svg>
-                        </div>
-                        <h2
-                            class="font-headline font-bold text-on-surface group-hover:text-primary transition-colors duration-200"
-                        >
-                            Arrastra archivos aquí
-                        </h2>
-                        <p class="text-sm text-on-surface-variant max-w-xs mt-1">
-                            o <span class="text-primary font-semibold">haz clic para seleccionar</span>
-                        </p>
-                        <p class="text-xs text-on-surface-variant mt-2">PDF, DOCX, EPUB, HTML, TXT y Markdown.</p>
-                    }
-                </div>
+        @if (collection()!.description) {
+            <p class="text-sm text-on-surface-variant max-w-prose -mt-2">{{ collection()!.description }}</p>
+        }
 
-                <!-- Document Table -->
-                @if (documents().length > 0) {
-                    <div class="bg-surface-container-low rounded-xl overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr
-                                        class="text-xs font-semibold text-on-surface-variant bg-surface-container-highest/50"
+        <input
+            #dropZoneInput
+            type="file"
+            multiple
+            accept=".pdf,.docx,.epub,.html,.htm,.txt,.md"
+            class="hidden"
+            (change)="onFileSelect($event)"
+        />
+
+        <!-- Franja de subida: también se puede soltar en cualquier parte de la página -->
+        <button
+            type="button"
+            (click)="openFilePicker()"
+            class="drop-zone flex items-center justify-center gap-3 w-full rounded-xl border-2 border-dashed px-4 py-4 text-sm transition-colors cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-surface-tint"
+            [class]="
+                dragging()
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-outline-variant text-on-surface-variant hover:border-primary/50 hover:text-on-surface'
+            "
+        >
+            @if (uploading()) {
+                <svg [lucideIcon]="LucideLoader" class="size-5 text-primary animate-spin"></svg>
+                <span class="font-semibold text-on-surface">Subiendo archivos...</span>
+            } @else if (dragging()) {
+                <svg [lucideIcon]="LucideCloudUpload" class="size-5"></svg>
+                <span class="font-semibold">Suelta los archivos aquí</span>
+            } @else {
+                <svg [lucideIcon]="LucideCloudUpload" class="size-5 text-primary"></svg>
+                <span>
+                    Arrastra archivos a la página o <span class="text-primary font-semibold">haz clic para elegirlos</span>
+                    <span class="hidden sm:inline"> · PDF, DOCX, EPUB, HTML, TXT y Markdown</span>
+                </span>
+            }
+        </button>
+
+        <!-- Documentos -->
+        @if (documents().length > 0) {
+            <section
+                ngpAccordion
+                ngpAccordionType="multiple"
+                class="bg-surface-container-lowest rounded-xl ring-1 ring-outline-variant/30 divide-y divide-outline-variant/30"
+                aria-label="Documentos"
+            >
+                @for (doc of documents(); track doc.id) {
+                    <div ngpAccordionItem [ngpAccordionItemValue]="doc.id">
+                        <div class="flex items-center gap-3 px-4 py-3">
+                            <button
+                                ngpAccordionTrigger
+                                class="group flex flex-1 min-w-0 items-center gap-3 text-left rounded-md cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-surface-tint"
+                            >
+                                <svg
+                                    [lucideIcon]="LucideChevronRight"
+                                    class="size-4 shrink-0 text-on-surface-variant transition-transform group-data-[open]:rotate-90"
+                                ></svg>
+                                <svg
+                                    [lucideIcon]="getFormatIcon(doc.format)"
+                                    class="size-5 text-on-surface-variant shrink-0"
+                                ></svg>
+                                <span class="min-w-0">
+                                    <span class="block font-medium text-on-surface text-sm truncate">{{
+                                        doc.filename
+                                    }}</span>
+                                    <span class="block text-xs text-on-surface-variant tabular-nums">
+                                        <span class="uppercase">{{ doc.format }}</span> ·
+                                        {{ formatBytes(doc.size_bytes) }}
+                                        @if (doc.status === 'indexed') {
+                                            · {{ doc.chunk_count }} fragmentos
+                                        }
+                                    </span>
+                                </span>
+                            </button>
+
+                            @switch (doc.status) {
+                                @case ('indexed') {
+                                    <span
+                                        class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-fixed-dim/25 text-on-tertiary-fixed-variant text-xs font-semibold"
                                     >
-                                        <th scope="col" class="px-6 py-3">Archivo</th>
-                                        <th scope="col" class="px-6 py-3">Formato</th>
-                                        <th scope="col" class="px-6 py-3">Tamaño</th>
-                                        <th scope="col" class="px-6 py-3">Fragmentos</th>
-                                        <th scope="col" class="px-6 py-3">Estado</th>
-                                        <th scope="col" class="px-6 py-3"><span class="sr-only">Acciones</span></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-outline-variant/20">
-                                    @for (doc of documents(); track doc.id) {
-                                        <tr class="hover:bg-surface-container-lowest transition-colors">
-                                            <td class="px-6 py-4">
-                                                <div class="flex items-center gap-3">
-                                                    <svg
-                                                        [lucideIcon]="getFormatIcon(doc.format)"
-                                                        class="size-5 text-on-surface-variant shrink-0"
-                                                    ></svg>
-                                                    <span class="font-medium text-on-surface text-sm">{{
-                                                        doc.filename
-                                                    }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 text-sm font-mono text-on-surface-variant uppercase">
-                                                {{ doc.format }}
-                                            </td>
-                                            <td class="px-6 py-4 text-sm text-on-surface-variant tabular-nums">
-                                                {{ formatBytes(doc.size_bytes) }}
-                                            </td>
-                                            <td class="px-6 py-4 text-sm text-on-surface-variant tabular-nums">
-                                                {{ doc.chunk_count }}
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                @switch (doc.status) {
-                                                    @case ('indexed') {
-                                                        <span
-                                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-fixed-dim/25 text-on-tertiary-fixed-variant text-xs font-semibold"
-                                                        >
-                                                            <svg [lucideIcon]="LucideCheckCircle2" class="size-3.5"></svg>
-                                                            Indexado
-                                                        </span>
-                                                    }
-                                                    @case ('processing') {
-                                                        <span
-                                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed text-xs font-semibold"
-                                                        >
-                                                            <svg
-                                                                [lucideIcon]="LucideRefreshCw"
-                                                                class="size-3.5 animate-spin"
-                                                            ></svg>
-                                                            Procesando
-                                                        </span>
-                                                    }
-                                                    @case ('pending') {
-                                                        <span
-                                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant text-xs font-semibold"
-                                                        >
-                                                            Pendiente
-                                                        </span>
-                                                    }
-                                                    @case ('error') {
-                                                        <span
-                                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container text-on-error-container text-xs font-semibold"
-                                                            [title]="doc.error_message ?? ''"
-                                                        >
-                                                            <svg [lucideIcon]="LucideAlertCircle" class="size-3.5"></svg>
-                                                            Error
-                                                        </span>
-                                                    }
-                                                }
-                                            </td>
-                                            <td class="px-4 py-4 text-right">
-                                                <button
-                                                    appButton
-                                                    variant="ghost-danger"
-                                                    size="icon-sm"
-                                                    (click)="requestDeleteDocument($event, doc.id)"
-                                                    [ngpDialogTrigger]="confirmDeleteDocDialog"
-                                                    ngpTooltipTrigger
-                                                    [disabled]="deletingDoc() === doc.id"
-                                                    aria-label="Eliminar documento"
-                                                >
-                                                    <span class="sr-only">Eliminar documento</span>
-                                                    @if (deletingDoc() === doc.id) {
-                                                        <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
-                                                    } @else {
-                                                        <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
-                                                    }
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                                        <svg [lucideIcon]="LucideCheckCircle2" class="size-3.5"></svg>
+                                        Indexado
+                                    </span>
+                                }
+                                @case ('processing') {
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed text-xs font-semibold"
+                                    >
+                                        <svg [lucideIcon]="LucideRefreshCw" class="size-3.5 animate-spin"></svg>
+                                        Procesando
+                                    </span>
+                                }
+                                @case ('pending') {
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-highest text-on-surface-variant text-xs font-semibold"
+                                    >
+                                        Pendiente
+                                    </span>
+                                }
+                                @case ('error') {
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container text-on-error-container text-xs font-semibold"
+                                    >
+                                        <svg [lucideIcon]="LucideAlertCircle" class="size-3.5"></svg>
+                                        Error
+                                    </span>
+                                }
+                            }
+
+                            <button
+                                appButton
+                                variant="ghost"
+                                size="icon-sm"
+                                [ngpMenuTrigger]="docMenu"
+                                ngpMenuTriggerPlacement="bottom-end"
+                                [disabled]="deletingDoc() === doc.id"
+                                [attr.aria-label]="'Más acciones para ' + doc.filename"
+                            >
+                                @if (deletingDoc() === doc.id || generatingAudioFor() === doc.id) {
+                                    <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
+                                } @else {
+                                    <svg [lucideIcon]="LucideEllipsis" class="size-4"></svg>
+                                }
+                            </button>
+                            <ng-template #docMenu>
+                                <div ngpMenu>
+                                    <button
+                                        ngpMenuItem
+                                        [ngpMenuItemDisabled]="doc.status !== 'indexed' || generatingAudioFor() === doc.id"
+                                        (click)="generateAudio(doc)"
+                                    >
+                                        <svg [lucideIcon]="LucideHeadphones" class="size-4"></svg>
+                                        Generar audio
+                                    </button>
+                                    <div class="menu-separator" role="separator"></div>
+                                    <button ngpMenuItem class="danger" (click)="askDeleteDocument(doc.id)">
+                                        <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
+                                        Eliminar documento
+                                    </button>
+                                </div>
+                            </ng-template>
+                        </div>
+
+                        @if (doc.status === 'processing' || doc.status === 'pending') {
+                            <div
+                                class="mx-4 mb-3 h-1 rounded-full bg-surface-container-high overflow-hidden"
+                                role="progressbar"
+                                [attr.aria-label]="'Indexando ' + doc.filename"
+                            >
+                                <div class="indeterminate-bar h-full w-1/3 rounded-full bg-primary"></div>
+                            </div>
+                        }
+
+                        <div ngpAccordionContent class="px-4 pb-4 pl-15">
+                            <p
+                                class="text-sm leading-relaxed max-w-prose"
+                                [class.text-on-surface]="doc.status === 'indexed' && doc.summary"
+                                [class.text-on-surface-variant]="!(doc.status === 'indexed' && doc.summary)"
+                                [class.text-error]="doc.status === 'error'"
+                            >
+                                {{ statusSummary(doc) }}
+                            </p>
                         </div>
                     </div>
-                } @else {
-                    <div class="text-center py-12 text-on-surface-variant text-sm">
-                        No hay documentos. Sube archivos usando la zona de arriba.
-                    </div>
                 }
+            </section>
+        } @else {
+            <div class="text-center py-12 text-on-surface-variant text-sm">
+                No hay documentos. Arrastra archivos a esta página o usa «Subir documentos».
             </div>
-
-            <!-- Side column -->
-            <div class="col-span-12 lg:col-span-4 space-y-6">
-                <section class="bg-primary text-on-primary rounded-xl p-6 shadow-xl relative overflow-hidden">
-                    <div class="relative z-10">
-                        <h2 class="text-sm font-semibold opacity-80 mb-4">Métricas de la colección</h2>
-                        <dl class="space-y-5">
-                            <div class="flex justify-between items-end border-b border-on-primary-container/20 pb-4">
-                                <dt class="text-sm">Documentos indexados</dt>
-                                <dd class="text-2xl font-headline font-extrabold tabular-nums">
-                                    {{ indexedCount() }}/{{ documents().length }}
-                                </dd>
-                            </div>
-                            <div class="flex justify-between items-end border-b border-on-primary-container/20 pb-4">
-                                <dt class="text-sm">Fragmentos de texto</dt>
-                                <dd class="text-2xl font-headline font-extrabold tabular-nums">
-                                    {{ totalChunks() | number }}
-                                </dd>
-                            </div>
-                            <div class="flex justify-between items-end">
-                                <dt class="text-sm">Tamaño total</dt>
-                                <dd class="text-2xl font-headline font-extrabold tabular-nums">{{ totalSize() }}</dd>
-                            </div>
-                        </dl>
-                    </div>
-                    <div class="absolute inset-0 bg-linear-to-br from-primary to-primary-container opacity-50"></div>
-                    <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-on-primary/10 rounded-full blur-3xl"></div>
-                </section>
-
-                @if (collection()!.description) {
-                    <section class="bg-surface-container-low rounded-xl p-6">
-                        <h2 class="text-sm font-semibold text-on-surface-variant mb-3">Descripción</h2>
-                        <p class="text-sm text-on-surface leading-relaxed">{{ collection()!.description }}</p>
-                    </section>
-                }
-            </div>
-        </div>
+        }
     }
 </div>
+
+<!-- Aviso al arrastrar archivos sobre la página -->
+@if (dragging() && !uploading()) {
+    <div
+        class="pointer-events-none absolute inset-2 z-30 rounded-2xl border-2 border-dashed border-primary bg-primary/5"
+        aria-hidden="true"
+    ></div>
+}
 
 <ng-template #confirmDeleteDocDialog let-close="close">
     <div ngpDialogOverlay class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">

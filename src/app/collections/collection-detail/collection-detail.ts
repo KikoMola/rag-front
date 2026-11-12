@@ -1,5 +1,16 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    ElementRef,
+    inject,
+    OnInit,
+    signal,
+    Type,
+    ViewContainerRef,
+    viewChild,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
     LucideDynamicIcon,
@@ -7,6 +18,8 @@ import {
     LucideFileType,
     LucideFileCode,
     LucideCloudUpload,
+    LucideEllipsis,
+    LucideHeadphones,
     LucideUpload,
     LucideMessageSquare,
     LucideTrash2,
@@ -18,15 +31,22 @@ import {
 } from '@lucide/angular';
 import type { LucideIconInput } from '@lucide/angular';
 import {
+    NgpAccordion,
+    NgpAccordionContent,
+    NgpAccordionItem,
+    NgpAccordionTrigger,
+} from 'ng-primitives/accordion';
+import {
     NgpDialog,
     NgpDialogDescription,
+    NgpDialogManager,
     NgpDialogOverlay,
     NgpDialogTitle,
-    NgpDialogTrigger,
 } from 'ng-primitives/dialog';
-import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
+import { NgpMenu, NgpMenuItem, NgpMenuTrigger } from 'ng-primitives/menu';
 import { EMPTY, switchMap, catchError } from 'rxjs';
 import { CollectionsService } from '../../core/services/collections.service';
+import { TtsService } from '../../core/services/tts.service';
 import type { Collection, CollectionDocument, DocumentStatus } from '../../core/models/collection.model';
 import { AppButton } from '../../shared/ui/button';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -41,25 +61,41 @@ const FORMAT_ICONS: Record<string, LucideIconInput> = {
     epub: LucideFileText,
 };
 
+/** Tipo de plantilla que acepta NgpDialogManager.open (el contexto no se exporta). */
+type DialogTemplate = Exclude<Parameters<NgpDialogManager['open']>[0], Type<unknown>>;
+
 @Component({
     selector: 'app-collection-detail',
     imports: [
         RouterLink,
         DecimalPipe,
         LucideDynamicIcon,
-        NgpDialogTrigger,
+        NgpAccordion,
+        NgpAccordionItem,
+        NgpAccordionTrigger,
+        NgpAccordionContent,
         NgpDialog,
         NgpDialogOverlay,
         NgpDialogTitle,
         NgpDialogDescription,
-        NgpTooltipTrigger,
+        NgpMenu,
+        NgpMenuItem,
+        NgpMenuTrigger,
         AppButton,
         PageHeader,
     ],
     templateUrl: './collection-detail.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
+    host: {
+        class: 'block min-h-full relative',
+        '(dragover)': 'onDragOver($event)',
+        '(dragleave)': 'onDragLeave($event)',
+        '(drop)': 'onDrop($event)',
+    },
 })
 export class CollectionDetail implements OnInit {
+    protected readonly LucideEllipsis = LucideEllipsis;
+    protected readonly LucideHeadphones = LucideHeadphones;
     protected readonly LucideFileText = LucideFileText;
     protected readonly LucideCloudUpload = LucideCloudUpload;
     protected readonly LucideUpload = LucideUpload;
@@ -75,6 +111,15 @@ export class CollectionDetail implements OnInit {
     private readonly router = inject(Router);
     private readonly collectionsService = inject(CollectionsService);
     private readonly toast = inject(ToastService);
+    private readonly ttsService = inject(TtsService);
+    private readonly dialogs = inject(NgpDialogManager);
+    private readonly viewContainerRef = inject(ViewContainerRef);
+    private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+    private readonly confirmDeleteDocDialog = viewChild.required<DialogTemplate>('confirmDeleteDocDialog');
+
+    /** Documento para el que se está encolando un audio. */
+    generatingAudioFor = signal<number | null>(null);
 
     collectionId = signal(0);
     collection = signal<Collection | null>(null);
@@ -157,7 +202,11 @@ export class CollectionDetail implements OnInit {
         this.dragging.set(true);
     }
 
-    onDragLeave(): void {
+    onDragLeave(event?: DragEvent): void {
+        // Moverse entre elementos de la página también dispara dragleave: solo
+        // se cancela al salir de verdad de la pantalla
+        const next = event?.relatedTarget as Node | null | undefined;
+        if (next && this.host.nativeElement.contains(next)) return;
         this.dragging.set(false);
     }
 
@@ -196,6 +245,35 @@ export class CollectionDetail implements OnInit {
                 this.toast.error('No se pudieron subir los archivos. Revisa el formato e inténtalo de nuevo.');
             },
         });
+    }
+
+    /** Abre la confirmación de borrado desde el menú de acciones de un documento. */
+    askDeleteDocument(docId: number): void {
+        this.pendingDeleteDocId.set(docId);
+        // Se abre tras cerrarse el menú; si no, el mismo clic cierra el diálogo
+        setTimeout(() => this.dialogs.open(this.confirmDeleteDocDialog(), { viewContainerRef: this.viewContainerRef }));
+    }
+
+    /** Encola un MP3 del documento en la sección Audio. */
+    generateAudio(doc: CollectionDocument): void {
+        this.generatingAudioFor.set(doc.id);
+        this.ttsService.createAudio({ documentId: doc.id }).subscribe({
+            next: () => {
+                this.generatingAudioFor.set(null);
+                this.toast.info(`Audio de «${doc.filename}» en cola. Lo encontrarás en Audio.`);
+            },
+            error: (err) => {
+                this.generatingAudioFor.set(null);
+                const detail = err?.error?.detail;
+                this.toast.error(typeof detail === 'string' ? detail : 'No se pudo crear el audio.');
+            },
+        });
+    }
+
+    statusSummary(doc: CollectionDocument): string {
+        if (doc.status === 'error') return doc.error_message ?? 'No se pudo indexar el documento.';
+        if (doc.status !== 'indexed') return 'El resumen aparecerá cuando termine la indexación.';
+        return doc.summary ?? 'Este documento todavía no tiene resumen.';
     }
 
     requestDeleteDocument(event: Event, docId: number): void {

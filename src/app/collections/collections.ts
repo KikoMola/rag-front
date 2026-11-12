@@ -1,16 +1,34 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    effect,
+    inject,
+    OnInit,
+    signal,
+    Type,
+    ViewContainerRef,
+    viewChild,
+} from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, EMPTY, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError, map } from 'rxjs/operators';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import {
     LucideDynamicIcon,
     LucideCirclePlus,
+    LucideEllipsis,
     LucideFolderOpen,
     LucideFileText,
     LucideArrowRight,
+    LucideLayoutGrid,
+    LucideList,
+    LucideMessageSquare,
     LucideTrash2,
+    LucideUpload,
     LucideX,
     LucideLoader,
     LucideSearch,
@@ -18,10 +36,13 @@ import {
 import {
     NgpDialog,
     NgpDialogDescription,
+    NgpDialogManager,
     NgpDialogOverlay,
     NgpDialogTitle,
     NgpDialogTrigger,
 } from 'ng-primitives/dialog';
+import { NgpMenu, NgpMenuItem, NgpMenuTrigger } from 'ng-primitives/menu';
+import { NgpToggleGroup, NgpToggleGroupItem } from 'ng-primitives/toggle-group';
 import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
 import { CollectionsService } from '../core/services/collections.service';
 import { DashboardService } from '../core/services/dashboard.service';
@@ -30,6 +51,19 @@ import type { Collection } from '../core/models/collection.model';
 import { AppButton } from '../shared/ui/button';
 import { PageHeader } from '../shared/ui/page-header';
 import { ToastService } from '../shared/ui/toast';
+
+/** Tipo de plantilla que acepta NgpDialogManager.open (el contexto no se exporta). */
+type DialogTemplate = Exclude<Parameters<NgpDialogManager['open']>[0], Type<unknown>>;
+
+const VIEW_STORAGE_KEY = 'rag-collections-view';
+
+function readView(): 'grid' | 'list' {
+    try {
+        return localStorage.getItem(VIEW_STORAGE_KEY) === 'list' ? 'list' : 'grid';
+    } catch {
+        return 'grid';
+    }
+}
 
 @Component({
     selector: 'app-collections',
@@ -42,6 +76,13 @@ import { ToastService } from '../shared/ui/toast';
         NgpDialogTitle,
         NgpDialogDescription,
         NgpTooltipTrigger,
+        NgpMenu,
+        NgpMenuItem,
+        NgpMenuTrigger,
+        NgpToggleGroup,
+        NgpToggleGroupItem,
+        RouterLink,
+        NgTemplateOutlet,
         AppButton,
         PageHeader,
     ],
@@ -49,6 +90,11 @@ import { ToastService } from '../shared/ui/toast';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Collections implements OnInit {
+    protected readonly LucideEllipsis = LucideEllipsis;
+    protected readonly LucideLayoutGrid = LucideLayoutGrid;
+    protected readonly LucideList = LucideList;
+    protected readonly LucideMessageSquare = LucideMessageSquare;
+    protected readonly LucideUpload = LucideUpload;
     protected readonly LucideCirclePlus = LucideCirclePlus;
     protected readonly LucideFolderOpen = LucideFolderOpen;
     protected readonly LucideFileText = LucideFileText;
@@ -64,6 +110,13 @@ export class Collections implements OnInit {
     private readonly router = inject(Router);
     private readonly fb = inject(FormBuilder);
     private readonly toast = inject(ToastService);
+    private readonly dialogs = inject(NgpDialogManager);
+    private readonly viewContainerRef = inject(ViewContainerRef);
+
+    private readonly confirmDeleteDialog = viewChild.required<DialogTemplate>('confirmDeleteDialog');
+
+    /** Vista en cuadrícula o en lista; se recuerda entre visitas. */
+    view = signal<'grid' | 'list'>(readView());
 
     collections = signal<Collection[]>([]);
     loading = signal(true);
@@ -157,6 +210,24 @@ export class Collections implements OnInit {
                 this.toast.error('No se pudo crear la colección. Inténtalo de nuevo.');
             },
         });
+    }
+
+    setView(value: string[] | null): void {
+        const view = value?.[0] === 'list' ? 'list' : 'grid';
+        this.view.set(view);
+        try {
+            localStorage.setItem(VIEW_STORAGE_KEY, view);
+        } catch {
+            // Sin almacenamiento: la vista no se recuerda
+        }
+    }
+
+    /** Abre la confirmación de borrado desde el menú de acciones de una colección. */
+    askDelete(id: number): void {
+        this.pendingDeleteCollectionId.set(id);
+        // El menú se cierra con este mismo clic y devuelve el foco a su botón; si el
+        // diálogo se abre a la vez, lo interpreta como un clic fuera y se cierra.
+        setTimeout(() => this.dialogs.open(this.confirmDeleteDialog(), { viewContainerRef: this.viewContainerRef }));
     }
 
     requestDeleteCollection(event: Event, id: number): void {

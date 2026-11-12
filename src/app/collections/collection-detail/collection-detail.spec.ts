@@ -472,20 +472,76 @@ describe('CollectionDetail', () => {
         fixture.componentInstance.deletingDoc.set(1);
         fixture.detectChanges();
 
-        const deleteButtons = fixture.nativeElement.querySelectorAll('[aria-label="Eliminar documento"]');
-        expect(deleteButtons.length).toBeGreaterThan(0);
-        // First button should be disabled since deletingDoc matches doc id 1
-        expect(deleteButtons[0].disabled).toBe(true);
+        const menuButtons = fixture.nativeElement.querySelectorAll('[aria-label^="Más acciones para"]');
+        expect(menuButtons.length).toBe(2);
+        // The first row's menu is disabled since deletingDoc matches doc id 1
+        expect(menuButtons[0].disabled).toBe(true);
     });
 
-    it('should click dragover zone through template', () => {
+    it('should click the upload strip through template', () => {
         const fixture = createFixture();
         initWithData(fixture);
 
-        const dropZone = fixture.nativeElement.querySelector('[style="border: 2px dashed;"]');
+        const dropZone: HTMLButtonElement = fixture.nativeElement.querySelector('.drop-zone');
         expect(dropZone).toBeTruthy();
         dropZone.click();
         fixture.detectChanges();
+    });
+
+    it('should accept files dropped anywhere on the page', () => {
+        const fixture = createFixture();
+        initWithData(fixture);
+        const host: HTMLElement = fixture.nativeElement;
+
+        host.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }));
+        fixture.detectChanges();
+        expect(fixture.componentInstance.dragging()).toBe(true);
+
+        // Moving between elements inside the page keeps the drop state
+        const inner = host.querySelector('section')!;
+        const leave = new Event('dragleave', { bubbles: true });
+        Object.defineProperty(leave, 'relatedTarget', { value: inner });
+        host.dispatchEvent(leave);
+        expect(fixture.componentInstance.dragging()).toBe(true);
+
+        host.dispatchEvent(new Event('dragleave', { bubbles: true }));
+        expect(fixture.componentInstance.dragging()).toBe(false);
+    });
+
+    it('should explain the summary state of each document', () => {
+        const fixture = createFixture();
+        initWithData(fixture);
+        const component = fixture.componentInstance;
+        expect(component.statusSummary({ ...mockDocuments[0], summary: 'Trata de X.' })).toBe('Trata de X.');
+        expect(component.statusSummary(mockDocuments[0])).toContain('todavía no tiene resumen');
+        expect(component.statusSummary(mockDocuments[1])).toContain('cuando termine la indexación');
+        expect(component.statusSummary({ ...mockDocuments[0], status: 'error', error_message: 'Falló' })).toBe(
+            'Falló',
+        );
+    });
+
+    it('should queue an audio for a document', () => {
+        const fixture = createFixture();
+        initWithData(fixture);
+        fixture.componentInstance.generateAudio(mockDocuments[0]);
+        expect(fixture.componentInstance.generatingAudioFor()).toBe(1);
+
+        const req = httpTesting.expectOne('http://localhost:8000/api/tts/audios');
+        expect((req.request.body as FormData).get('document_id')).toBe('1');
+        req.flush({});
+        expect(fixture.componentInstance.generatingAudioFor()).toBeNull();
+    });
+
+    it('should open the delete confirmation from the document menu', () => {
+        vi.useFakeTimers();
+        const fixture = createFixture();
+        initWithData(fixture);
+        fixture.componentInstance.askDeleteDocument(1);
+        expect(fixture.componentInstance.pendingDeleteDocId()).toBe(1);
+        vi.advanceTimersByTime(1);
+        fixture.detectChanges();
+        expect(document.body.textContent).toContain('Eliminar documento');
+        vi.useRealTimers();
     });
 
     it('should keep a file input for uploads', () => {

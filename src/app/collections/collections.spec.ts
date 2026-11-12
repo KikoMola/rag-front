@@ -397,25 +397,55 @@ describe('Collections', () => {
         expect(html).toContain('Desc A');
     });
 
-    it('should navigate when clicking a collection card', () => {
+    it('should navigate with the Abrir button of a card', () => {
         const router = TestBed.inject(Router);
         vi.spyOn(router, 'navigate');
 
         const fixture = createAndInit();
-        const article = fixture.nativeElement.querySelector('article');
-        article.click();
+        const article: HTMLElement = fixture.nativeElement.querySelector('article');
+        const open = [...article.querySelectorAll('button')].find((b) => b.textContent!.trim() === 'Abrir')!;
+        open.click();
         expect(router.navigate).toHaveBeenCalledWith(['/collections', 1]);
     });
 
-    it('should navigate on Enter key on collection card', () => {
-        const router = TestBed.inject(Router);
-        vi.spyOn(router, 'navigate');
-
+    it('should link the collection name to its detail page', () => {
         const fixture = createAndInit();
-        const article = fixture.nativeElement.querySelector('article');
-        article.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+        const link: HTMLAnchorElement = fixture.nativeElement.querySelector('article h3 a');
+        expect(link.getAttribute('href')).toBe('/collections/1');
+    });
+
+    it('should offer chat for collections with documents and upload for empty ones', () => {
+        const fixture = createAndInit();
+        const [withDocs, empty] = fixture.nativeElement.querySelectorAll('article') as NodeListOf<HTMLElement>;
+        expect(withDocs.querySelector('a[href="/collections/1/chat"]')?.textContent).toContain('Chatear');
+        expect(empty.textContent).toContain('Añadir documentos');
+        expect(empty.querySelector('a[href="/collections/2/chat"]')).toBeNull();
+    });
+
+    it('should switch to the list view and remember it', () => {
+        localStorage.removeItem('rag-collections-view');
+        const fixture = createAndInit();
+        fixture.componentInstance.setView(['list']);
         fixture.detectChanges();
-        expect(router.navigate).toHaveBeenCalledWith(['/collections', 1]);
+
+        expect(fixture.componentInstance.view()).toBe('list');
+        expect(localStorage.getItem('rag-collections-view')).toBe('list');
+        expect(fixture.nativeElement.querySelector('section.divide-y')).toBeTruthy();
+
+        fixture.componentInstance.setView(null);
+        expect(fixture.componentInstance.view()).toBe('grid');
+        localStorage.removeItem('rag-collections-view');
+    });
+
+    it('should open the delete confirmation from the actions menu', () => {
+        vi.useFakeTimers();
+        const fixture = createAndInit();
+        fixture.componentInstance.askDelete(2);
+        expect(fixture.componentInstance.pendingDeleteCollectionId()).toBe(2);
+        vi.advanceTimersByTime(1);
+        fixture.detectChanges();
+        expect(document.body.textContent).toContain('Eliminar colección');
+        vi.useRealTimers();
     });
 
     it('should render deleting spinner on matching collection card', () => {
@@ -423,10 +453,11 @@ describe('Collections', () => {
         fixture.componentInstance.deleting.set(1);
         fixture.detectChanges();
 
-        const deleteButtons = fixture.nativeElement.querySelectorAll('[aria-label="Eliminar colección"]');
-        expect(deleteButtons.length).toBeGreaterThan(0);
-        // The first button should be disabled since deleting matches id 1
-        expect(deleteButtons[0].disabled).toBe(true);
+        const menuButtons = fixture.nativeElement.querySelectorAll('[aria-label^="Más acciones para"]');
+        expect(menuButtons.length).toBe(2);
+        // The first card's menu is disabled while that collection is being deleted
+        expect(menuButtons[0].disabled).toBe(true);
+        expect(menuButtons[1].disabled).toBe(false);
     });
 
     it('should render empty state button in non-search mode', () => {

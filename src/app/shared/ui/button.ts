@@ -14,7 +14,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
     primary:
         'bg-linear-to-r from-primary to-primary-container text-on-primary shadow-sm hover:opacity-90 data-[press]:opacity-80',
     secondary:
-        'bg-surface-container-lowest text-on-surface ring-1 ring-inset ring-outline-variant hover:bg-surface-container-low data-[press]:bg-surface-container',
+        'bg-surface-container-lowest text-on-surface ring-1 ring-inset ring-outline/50 hover:bg-surface-container-low data-[press]:bg-surface-container',
     ghost: 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface data-[press]:bg-surface-container-highest',
     danger: 'bg-error text-on-error shadow-sm hover:opacity-90 data-[press]:opacity-80',
     'ghost-danger': 'text-on-surface-variant hover:bg-error-container hover:text-on-error-container',
