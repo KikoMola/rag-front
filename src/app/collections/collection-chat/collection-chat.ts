@@ -24,11 +24,12 @@ import {
     LucideFileText,
     LucideSquare,
 } from '@lucide/angular';
-import { NgpTooltipTrigger } from 'ng-primitives/tooltip';
 import { map, of, Subscription, switchMap, tap } from 'rxjs';
 import { CollectionsService } from '../../core/services/collections.service';
 import { ChatService } from '../../core/services/chat.service';
-import { MarkdownPipe } from '../../core/pipes/markdown.pipe';
+import { AssistantMessage } from '../../shared/chat/assistant-message';
+import { ChatComposer } from '../../shared/chat/chat-composer';
+import { ThinkingTimer } from '../../shared/chat/thinking-timer';
 import type { Collection } from '../../core/models/collection.model';
 import type { Source } from '../../core/models/conversation.model';
 import { AppButton } from '../../shared/ui/button';
@@ -39,6 +40,7 @@ interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
     thinking?: string;
+    thinkingSeconds?: number;
     sources?: Source[];
     timestamp: Date;
     streaming?: boolean;
@@ -46,9 +48,8 @@ interface ChatMessage {
 
 @Component({
     selector: 'app-collection-chat',
-    imports: [RouterLink, LucideDynamicIcon, MarkdownPipe, NgpTooltipTrigger, AppButton, PageHeader],
+    imports: [RouterLink, LucideDynamicIcon, AppButton, PageHeader, AssistantMessage, ChatComposer],
     templateUrl: './collection-chat.html',
-    styleUrl: './collection-chat.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'flex flex-col h-full' },
 })
@@ -93,6 +94,9 @@ export class CollectionChat implements OnInit, OnDestroy {
 
     expandedThinking = signal<Set<number>>(new Set());
 
+    /** Preguntas propuestas por el backend; null mientras se generan. */
+    suggestions = signal<string[] | null>(null);
+
     hasMessages = computed(() => this.messages().length > 0);
 
     ngOnInit(): void {
@@ -108,6 +112,7 @@ export class CollectionChat implements OnInit, OnDestroy {
                 const match = collections.find((c) => c.id === this.collectionId());
                 this.collection.set(match ?? null);
                 this.loading.set(false);
+                if (match && match.document_count > 0) this.loadSuggestions();
             },
             error: () => {
                 this.loading.set(false);
@@ -118,6 +123,14 @@ export class CollectionChat implements OnInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.streamSub?.unsubscribe();
+    }
+
+    /** Las preguntas sugeridas son opcionales: si fallan se muestran las genéricas. */
+    private loadSuggestions(): void {
+        this.collectionsService.getSuggestedQuestions(this.collectionId()).subscribe({
+            next: (res) => this.suggestions.set(res.questions.slice(0, 4)),
+            error: () => this.suggestions.set([]),
+        });
     }
 
     sendMessage(): void {
@@ -145,6 +158,7 @@ export class CollectionChat implements OnInit, OnDestroy {
 
         let fullResponse = '';
         let thinkingContent = '';
+        const timer = new ThinkingTimer();
         let sources: Source[] = [];
 
         const conversationId$ = this.conversationId()
@@ -162,13 +176,15 @@ export class CollectionChat implements OnInit, OnDestroy {
                 next: (event) => {
                     if (event.type === 'thinking') {
                         thinkingContent += event.token;
-                        this.updateLastMessage(fullResponse, thinkingContent, sources);
+                        timer.onThinking();
+                        this.updateLastMessage(fullResponse, thinkingContent, sources, timer.seconds);
                     } else if (event.type === 'sources') {
                         sources = event.sources;
-                        this.updateLastMessage(fullResponse, thinkingContent, sources);
+                        this.updateLastMessage(fullResponse, thinkingContent, sources, timer.seconds);
                     } else if (event.type === 'token') {
                         fullResponse += event.token;
-                        this.updateLastMessage(fullResponse, thinkingContent, sources);
+                        timer.onContent();
+                        this.updateLastMessage(fullResponse, thinkingContent, sources, timer.seconds);
                     } else if (event.type === 'done') {
                         this.finishStream();
                     } else if (event.type === 'error') {
@@ -241,12 +257,13 @@ export class CollectionChat implements OnInit, OnDestroy {
         this.streaming.set(false);
     }
 
-    private updateLastMessage(content: string, thinking: string, sources: Source[]): void {
+    private updateLastMessage(content: string, thinking: string, sources: Source[], thinkingSeconds?: number): void {
         this.messages.update((msgs) => {
             const updated = [...msgs];
             const last = { ...updated[updated.length - 1] };
             last.content = content;
             last.thinking = thinking;
+            last.thinkingSeconds = thinkingSeconds;
             last.sources = sources;
             updated[updated.length - 1] = last;
             return updated;

@@ -1,87 +1,191 @@
-<!-- Left: Conversation History -->
-<aside class="w-72 flex flex-col bg-surface-container overflow-hidden shrink-0" aria-label="Historial de conversaciones">
-    <div class="px-4 pt-6 pb-3 flex items-center justify-between gap-2">
-        <h2 class="text-sm font-semibold text-on-surface">Historial</h2>
-        <button appButton variant="ghost" size="sm" (click)="newConversation()">
-            <svg [lucideIcon]="LucideMessageSquarePlus" class="size-4"></svg>
-            Nueva
-        </button>
+<!-- Left: Conversation History (columna en pantallas anchas) -->
+<aside
+    class="hidden lg:flex w-72 flex-col bg-surface-container overflow-hidden shrink-0"
+    aria-label="Historial de conversaciones"
+>
+    <ng-container *ngTemplateOutlet="historyPanel; context: { $implicit: null, where: 'aside' }" />
+</aside>
+
+<!-- Contenido del historial, compartido por la columna y el panel del móvil -->
+<ng-template #historyPanel let-close let-where="where">
+    <div class="px-4 pt-6 pb-3 flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-2">
+            <h2 class="text-sm font-semibold text-on-surface">Historial</h2>
+            <button appButton variant="ghost" size="sm" (click)="newConversation(); close?.()">
+                <svg [lucideIcon]="LucideMessageSquarePlus" class="size-4"></svg>
+                Nueva
+            </button>
+        </div>
+        <div class="relative">
+            <svg
+                [lucideIcon]="LucideSearch"
+                class="absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
+                [size]="14"
+            ></svg>
+            <label [for]="'history-search-' + where" class="sr-only">Buscar en el historial</label>
+            <input
+                [id]="'history-search-' + where"
+                type="search"
+                placeholder="Buscar en el historial…"
+                [value]="historyQuery()"
+                (input)="historyQuery.set($any($event.target).value)"
+                class="w-full h-9 rounded-lg bg-surface-container-lowest pl-8 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant ring-1 ring-inset ring-outline-variant/40 outline-none focus:ring-2 focus:ring-surface-tint"
+            />
+        </div>
     </div>
 
     @if (loadingConversations()) {
         <div class="flex items-center justify-center py-8">
             <svg [lucideIcon]="LucideLoader" class="size-5 text-primary animate-spin"></svg>
         </div>
-    } @else if (!conversations().length) {
+    } @else if (!historyGroups().length) {
         <div class="flex flex-col items-center justify-center flex-1 text-center px-4 pb-8">
             <svg [lucideIcon]="LucideSparkles" class="size-7 text-on-surface-variant/40 mb-3"></svg>
-            <p class="text-sm text-on-surface-variant">Sin conversaciones todavía</p>
+            <p class="text-sm text-on-surface-variant">
+                {{ historyQuery().trim() ? 'Nada coincide con la búsqueda' : 'Sin conversaciones todavía' }}
+            </p>
         </div>
     } @else {
-        <ul class="flex flex-col gap-0.5 px-2 overflow-y-auto flex-1 pb-4">
-            @for (conv of conversations(); track conv.id) {
-                <li class="relative flex items-center">
-                    <button
-                        (click)="selectConversation(conv)"
-                        class="w-full text-left pl-3 pr-10 py-2.5 rounded-lg transition-colors cursor-pointer outline-none hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-surface-tint"
-                        [class.bg-surface-container-lowest]="conversationId() === conv.id"
-                        [class.shadow-sm]="conversationId() === conv.id"
-                        [attr.aria-current]="conversationId() === conv.id ? 'true' : null"
-                    >
-                        <p
-                            class="text-sm truncate"
-                            [class.font-semibold]="conversationId() === conv.id"
-                            [class.text-on-surface]="conversationId() === conv.id"
-                            [class.text-on-surface-variant]="conversationId() !== conv.id"
-                        >
-                            {{ conv.title }}
-                        </p>
-                        <p class="text-xs text-on-surface-variant mt-0.5">{{ formatDate(conv.updated_at) }}</p>
-                    </button>
-                    <button
-                        appButton
-                        variant="ghost-danger"
-                        size="icon-sm"
-                        class="absolute right-1"
-                        (click)="deleteConversation($event, conv.id)"
-                        ngpTooltipTrigger
-                        aria-label="Eliminar conversación"
-                    >
-                        <span class="sr-only">Eliminar conversación</span>
-                        <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
-                    </button>
-                </li>
+        <nav class="flex flex-col gap-3 px-2 overflow-y-auto flex-1 pb-4" aria-label="Conversaciones">
+            @for (group of historyGroups(); track group.label) {
+                <div>
+                    <p class="px-3 pb-1 text-xs font-semibold text-on-surface-variant">{{ group.label }}</p>
+                    <ul class="flex flex-col gap-0.5">
+                        @for (entry of group.entries; track entry.conversation.id) {
+                            <ng-container
+                                *ngTemplateOutlet="historyItem; context: { $implicit: entry.conversation, fork: false, close: close }"
+                            />
+                            @for (fork of entry.forks; track fork.id) {
+                                <ng-container *ngTemplateOutlet="historyItem; context: { $implicit: fork, fork: true, close: close }" />
+                            }
+                        }
+                    </ul>
+                </div>
             }
-        </ul>
+        </nav>
     }
-</aside>
+</ng-template>
+
+<!-- Historial en un panel desplegable para pantallas estrechas -->
+<ng-template #historyDrawer let-close="close">
+    <div ngpDialogOverlay class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm lg:hidden">
+        <div
+            ngpDialog
+            aria-label="Historial de conversaciones"
+            class="mobile-drawer h-dvh w-80 max-w-[85vw] bg-surface-container flex flex-col shadow-2xl"
+        >
+            <h2 ngpDialogTitle class="sr-only">Historial de conversaciones</h2>
+            <ng-container *ngTemplateOutlet="historyPanel; context: { $implicit: close, where: 'drawer' }" />
+        </div>
+    </div>
+</ng-template>
+
+<ng-template #historyItem let-conv let-fork="fork" let-close="close">
+    <li class="relative flex items-center" [class.pl-4]="fork">
+        <button
+            (click)="selectConversation(conv); close?.()"
+            class="w-full text-left pl-3 pr-10 py-2 rounded-lg transition-colors cursor-pointer outline-none hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-surface-tint"
+            [class.bg-surface-container-lowest]="conversationId() === conv.id"
+            [class.shadow-sm]="conversationId() === conv.id"
+            [attr.aria-current]="conversationId() === conv.id ? 'true' : null"
+        >
+            <p
+                class="text-sm truncate flex items-center gap-1.5"
+                [class.font-semibold]="conversationId() === conv.id"
+                [class.text-on-surface]="conversationId() === conv.id"
+                [class.text-on-surface-variant]="conversationId() !== conv.id"
+            >
+                @if (fork) {
+                    <svg [lucideIcon]="LucideGitFork" class="size-3.5 shrink-0" aria-label="Bifurcación"></svg>
+                }
+                <span class="truncate">{{ conv.title }}</span>
+            </p>
+            <p class="text-xs text-on-surface-variant mt-0.5">{{ formatDate(conv.updated_at) }}</p>
+        </button>
+        <button
+            appButton
+            variant="ghost-danger"
+            size="icon-sm"
+            class="absolute right-1"
+            (click)="deleteConversation($event, conv.id)"
+            ngpTooltipTrigger
+            aria-label="Eliminar conversación"
+        >
+            <span class="sr-only">Eliminar conversación</span>
+            <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
+        </button>
+    </li>
+</ng-template>
 
 <!-- Right: Main Chat -->
 <section class="flex-1 flex flex-col overflow-hidden min-w-0">
-    <app-page-header class="px-6 lg:px-10 pt-8 pb-2" [title]="currentTitle()" subtitle="Chat general con tus modelos locales." />
+    <app-page-header class="px-6 lg:px-10 pt-8 pb-2" [title]="currentTitle()" subtitle="Chat general con tus modelos locales.">
+        <button pageActions appButton variant="secondary" size="sm" class="lg:hidden" [ngpDialogTrigger]="historyDrawer">
+            <svg [lucideIcon]="LucideHistory" class="size-4"></svg>
+            Historial
+        </button>
+        <button pageActions appButton variant="secondary" size="sm" class="lg:hidden" (click)="newConversation()">
+            <svg [lucideIcon]="LucideMessageSquarePlus" class="size-4"></svg>
+            Nueva
+        </button>
+        @if (conversationId()) {
+            <button
+                pageActions
+                appButton
+                variant="ghost"
+                size="icon"
+                [ngpMenuTrigger]="conversationMenu"
+                ngpMenuTriggerPlacement="bottom-end"
+                aria-label="Acciones de la conversación"
+            >
+                @if (exporting()) {
+                    <svg [lucideIcon]="LucideLoader" class="size-5 animate-spin"></svg>
+                } @else {
+                    <svg [lucideIcon]="LucideEllipsis" class="size-5"></svg>
+                }
+            </button>
+        }
+    </app-page-header>
+    <ng-template #conversationMenu>
+        <div ngpMenu>
+            <button ngpMenuItem (click)="exportConversation('md')">
+                <svg [lucideIcon]="LucideFileText" class="size-4"></svg>
+                Exportar a Markdown
+            </button>
+            <button ngpMenuItem (click)="exportConversation('pdf')">
+                <svg [lucideIcon]="LucideDownload" class="size-4"></svg>
+                Exportar a PDF
+            </button>
+            <div class="menu-separator" role="separator"></div>
+            <button ngpMenuItem class="danger" (click)="deleteCurrentConversation()">
+                <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
+                Eliminar conversación
+            </button>
+        </div>
+    </ng-template>
 
     <!-- Messages -->
     <div #messagesContainer class="flex-1 overflow-y-auto [scrollbar-gutter:stable] px-6 lg:px-10 py-6">
         @if (!hasMessages()) {
-            <div class="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto">
-                <div class="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
-                    <svg [lucideIcon]="LucideSparkles" class="size-10 text-primary"></svg>
+            <div class="flex flex-col items-center justify-center min-h-full text-center max-w-lg mx-auto">
+                <div class="w-16 h-16 rounded-full bg-surface-container-low flex items-center justify-center mb-5">
+                    <svg [lucideIcon]="LucideSparkles" class="size-8 text-primary"></svg>
                 </div>
-                <h2 class="text-2xl font-bold font-headline text-on-surface mb-3">¿En qué puedo ayudarte?</h2>
-                <p class="text-on-surface-variant text-sm leading-relaxed mb-8">
-                    Hazme cualquier pregunta. Estoy aquí para ayudarte con lo que necesites.
+                <h2 class="text-2xl font-bold font-headline text-on-surface mb-2">¿En qué puedo ayudarte?</h2>
+                <p class="text-on-surface-variant text-sm leading-relaxed mb-6">
+                    Hazme cualquier pregunta. Elige abajo el modo según lo que necesites.
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                     <button
                         (click)="inputValue.set('¿Qué puedes hacer por mí?')"
-                        class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright ring-1 ring-transparent hover:ring-primary/20 transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-surface-tint"
+                        class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright ring-1 ring-outline-variant/30 hover:ring-primary/30 transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-surface-tint"
                     >
                         <span class="text-primary font-semibold">Capacidades →</span><br />
                         ¿Qué puedes hacer por mí?
                     </button>
                     <button
                         (click)="inputValue.set('Explícame cómo funciona este sistema')"
-                        class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright ring-1 ring-transparent hover:ring-primary/20 transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-surface-tint"
+                        class="text-left p-4 bg-surface-container-lowest rounded-xl text-sm text-on-surface-variant hover:bg-surface-bright ring-1 ring-outline-variant/30 hover:ring-primary/30 transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-surface-tint"
                     >
                         <span class="text-primary font-semibold">Información →</span><br />
                         ¿Cómo funciona este sistema?
@@ -89,14 +193,14 @@
                 </div>
             </div>
         } @else {
-            <div class="space-y-6 max-w-6xl mx-auto">
+            <div class="flex flex-col gap-6 max-w-4xl mx-auto">
                 @for (msg of messages(); track $index) {
                     @if (msg.role === 'user') {
-                        <div class="flex flex-col items-end">
-                            <div class="bg-primary text-on-primary p-5 rounded-2xl rounded-tr-none max-w-2xl">
-                                <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+                        <div class="flex flex-col items-end gap-1.5">
+                            <div class="bg-primary text-on-primary px-5 py-4 rounded-2xl rounded-tr-none max-w-2xl">
+                                <p class="text-base leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
                             </div>
-                            <div class="flex items-center gap-1 mt-1.5">
+                            <div class="flex items-center gap-1">
                                 @if (msg.messageId) {
                                     <button
                                         appButton
@@ -114,81 +218,17 @@
                             </div>
                         </div>
                     } @else {
-                        <div class="flex flex-col items-start">
-                            <!-- Thinking -->
-                            @if (msg.thinking) {
-                                <div class="mb-4 w-full max-w-5xl">
-                                    <div class="inline-flex flex-col max-w-full">
-                                        <button
-                                            (click)="toggleThinking($index)"
-                                            [attr.aria-expanded]="isThinkingExpanded($index)"
-                                            class="self-start flex items-center gap-2 px-4 py-2 bg-tertiary-fixed-dim/10 hover:bg-tertiary-fixed-dim/20 transition-colors cursor-pointer rounded-t-2xl group relative z-10 outline-none focus-visible:outline-2 focus-visible:outline-surface-tint"
-                                            [class.rounded-b-2xl]="
-                                                !isThinkingExpanded($index) && !(msg.streaming && !msg.content)
-                                            "
-                                        >
-                                            <svg
-                                                [lucideIcon]="LucideBrain"
-                                                class="size-4 text-on-tertiary-fixed-variant"
-                                            ></svg>
-                                            <span class="text-sm font-semibold text-on-tertiary-fixed-variant">
-                                                @if (msg.streaming && !msg.content) {
-                                                    Analizando...
-                                                } @else {
-                                                    Razonamiento
-                                                }
-                                            </span>
-                                            <span class="text-on-tertiary-fixed-variant/70 ml-1">
-                                                @if (msg.streaming && !msg.content) {
-                                                    <svg [lucideIcon]="LucideLoader" class="size-3.5 animate-spin"></svg>
-                                                } @else {
-                                                    <svg
-                                                        [lucideIcon]="LucideChevronDown"
-                                                        class="size-3.5 transition-transform duration-300"
-                                                        [class.rotate-180]="isThinkingExpanded($index)"
-                                                    ></svg>
-                                                }
-                                            </span>
-                                        </button>
-                                        @if (isThinkingExpanded($index) || (msg.streaming && !msg.content)) {
-                                            <div
-                                                class="bg-tertiary-fixed-dim/5 rounded-b-2xl rounded-tr-2xl p-6 text-sm text-on-surface-variant leading-relaxed max-w-full"
-                                            >
-                                                <div
-                                                    class="prose prose-thinking max-w-none text-on-surface-variant"
-                                                    [innerHTML]="msg.thinking | markdown"
-                                                ></div>
-                                                @if (msg.streaming && !msg.content) {
-                                                    <span
-                                                        class="inline-block w-1.5 h-4 bg-tertiary-fixed-dim/60 animate-pulse ml-1 align-middle"
-                                                    ></span>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            }
-
-                            <!-- Response -->
-                            @if (msg.content || !msg.thinking) {
-                                <div
-                                    class="bg-surface-container-lowest text-on-surface p-6 rounded-2xl rounded-tl-none max-w-5xl border border-outline-variant/30"
-                                >
-                                    <div class="prose" [innerHTML]="msg.content | markdown"></div>
-                                    @if (msg.streaming) {
-                                        <span
-                                            class="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 align-middle"
-                                        ></span>
-                                    }
-                                </div>
-                            }
-
-                            <div class="flex items-center gap-1 mt-1.5">
-                                <svg [lucideIcon]="LucideSparkles" class="size-3.5 text-primary-container"></svg>
-                                <span class="text-xs text-on-surface-variant mr-1">
-                                    C.O.R.E. · {{ formatTime(msg.timestamp) }}
-                                </span>
-                                @if (!msg.streaming) {
+                        <app-assistant-message
+                            [content]="msg.content"
+                            [thinking]="msg.thinking"
+                            [thinkingSeconds]="msg.thinkingSeconds"
+                            [thinkingOpen]="isThinkingExpanded($index)"
+                            (toggleThinking)="toggleThinking($index)"
+                            [streaming]="!!msg.streaming"
+                            [time]="formatTime(msg.timestamp)"
+                        >
+                            @if (!msg.streaming) {
+                                <ng-container messageActions>
                                     <button
                                         appButton
                                         variant="ghost"
@@ -217,9 +257,9 @@
                                             <svg [lucideIcon]="LucideGitFork" class="size-4"></svg>
                                         </button>
                                     }
-                                }
-                            </div>
-                        </div>
+                                </ng-container>
+                            }
+                        </app-assistant-message>
                     }
                 }
             </div>
@@ -227,71 +267,31 @@
     </div>
 
     <!-- Input -->
-    <div class="px-6 pt-4 pb-6 bg-linear-to-t from-surface-container-low via-surface-container-low to-transparent">
-        <div class="max-w-6xl mx-auto">
-            <div class="flex flex-wrap gap-2 mb-3" role="group" aria-label="Seleccionar modelo">
-                @for (m of models; track m.id) {
-                    <button
-                        (click)="selectModel(m)"
-                        [attr.title]="m.hint + ' · ' + m.model"
-                        class="flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-colors cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface-tint"
-                        [class.bg-primary]="selectedModel().id === m.id"
-                        [class.text-on-primary]="selectedModel().id === m.id"
-                        [class.bg-surface-container-lowest]="selectedModel().id !== m.id"
-                        [class.text-on-surface-variant]="selectedModel().id !== m.id"
-                        [class.hover:bg-surface-container-high]="selectedModel().id !== m.id"
-                        [attr.aria-pressed]="selectedModel().id === m.id"
-                    >
-                        <svg [lucideIcon]="m.icon" class="size-4"></svg>
-                        {{ m.label }}
-                    </button>
-                }
-            </div>
-
-            <div
-                class="bg-surface-container-lowest rounded-2xl shadow-xl shadow-on-surface/5 p-2 border border-outline-variant/40 focus-within:ring-2 focus-within:ring-surface-tint/40 transition-all"
-            >
-                <div class="flex items-end gap-2 p-1">
-                    <label for="chat-input" class="sr-only">Mensaje</label>
-                    <textarea
-                        id="chat-input"
-                        class="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm py-3 px-3 resize-none max-h-48 font-body"
-                        placeholder="Escribe tu mensaje..."
-                        rows="1"
-                        [value]="inputValue()"
-                        (input)="inputValue.set($any($event.target).value)"
-                        (keydown)="onKeydown($event)"
-                    ></textarea>
-                    @if (streaming()) {
-                        <button
-                            appButton
-                            variant="danger"
-                            size="icon"
-                            (click)="stopStream()"
-                            ngpTooltipTrigger
-                            aria-label="Detener generación"
-                        >
-                            <span class="sr-only">Detener</span>
-                            <svg [lucideIcon]="LucideSquare" class="size-4"></svg>
-                        </button>
-                    } @else {
-                        <button
-                            appButton
-                            size="icon"
-                            (click)="sendMessage()"
-                            [disabled]="!inputValue().trim()"
-                            ngpTooltipTrigger
-                            aria-label="Enviar mensaje"
-                        >
-                            <span class="sr-only">Enviar (Intro)</span>
-                            <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
-                        </button>
-                    }
-                </div>
-            </div>
-            <p class="text-center text-xs text-on-surface-variant mt-2">
-                Las respuestas las genera un modelo local y pueden contener errores. Mayús + Intro para salto de línea.
-            </p>
+    <app-chat-composer
+        class="px-6 pt-4 pb-6 bg-linear-to-t from-surface-container-low via-surface-container-low to-transparent"
+        [(value)]="inputValue"
+        [streaming]="streaming()"
+        (send)="sendMessage()"
+        (stop)="stopStream()"
+        hint="Las respuestas las genera un modelo local y pueden contener errores. Mayús + Intro para salto de línea."
+    >
+        <div composerTools class="flex flex-wrap gap-2 mb-3" role="group" aria-label="Modo de respuesta">
+            @for (m of models; track m.id) {
+                <button
+                    (click)="selectModel(m)"
+                    [attr.title]="m.hint + ' · ' + m.model"
+                    class="flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-colors cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface-tint"
+                    [class.bg-primary]="selectedModel().id === m.id"
+                    [class.text-on-primary]="selectedModel().id === m.id"
+                    [class.bg-surface-container-lowest]="selectedModel().id !== m.id"
+                    [class.text-on-surface-variant]="selectedModel().id !== m.id"
+                    [class.hover:bg-surface-container-high]="selectedModel().id !== m.id"
+                    [attr.aria-pressed]="selectedModel().id === m.id"
+                >
+                    <svg [lucideIcon]="m.icon" class="size-4"></svg>
+                    {{ m.label }}
+                </button>
+            }
         </div>
-    </div>
+    </app-chat-composer>
 </section>

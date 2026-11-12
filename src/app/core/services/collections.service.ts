@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import type { Collection, CollectionCreate, CollectionDocument } from '../models/collection.model';
+import type { Collection, CollectionCreate, CollectionDocument, SuggestedQuestions } from '../models/collection.model';
 
 const API_BASE = 'http://localhost:8000/api/knowledge';
 
@@ -27,6 +27,11 @@ export class CollectionsService {
 
     getDocuments(collectionId: number): Observable<CollectionDocument[]> {
         return this.http.get<CollectionDocument[]>(`${API_BASE}/collections/${collectionId}/documents`);
+    }
+
+    /** Preguntas que el backend propone para la colección (las genera el LLM la primera vez y las cachea). */
+    getSuggestedQuestions(collectionId: number): Observable<SuggestedQuestions> {
+        return this.http.get<SuggestedQuestions>(`${API_BASE}/collections/${collectionId}/suggested-questions`);
     }
 
     getDocumentStatus(collectionId: number, documentId: number): Observable<CollectionDocument> {
