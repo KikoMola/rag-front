@@ -154,7 +154,7 @@
                                                     @case ('error') {
                                                         <span
                                                             class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container text-on-error-container text-xs font-semibold"
-                                                            [ngpTooltipTrigger]="doc.error_message || null"
+                                                            [title]="doc.error_message ?? ''"
                                                         >
                                                             <svg [lucideIcon]="LucideAlertCircle" class="size-3.5"></svg>
                                                             Error
@@ -169,10 +169,11 @@
                                                     size="icon-sm"
                                                     (click)="requestDeleteDocument($event, doc.id)"
                                                     [ngpDialogTrigger]="confirmDeleteDocDialog"
-                                                    [ngpTooltipTrigger]="'Eliminar documento'"
+                                                    ngpTooltipTrigger
                                                     [disabled]="deletingDoc() === doc.id"
                                                     aria-label="Eliminar documento"
                                                 >
+                                                    <span class="sr-only">Eliminar documento</span>
                                                     @if (deletingDoc() === doc.id) {
                                                         <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
                                                     } @else {
@@ -201,7 +202,7 @@
                         <dl class="space-y-5">
                             <div class="flex justify-between items-end border-b border-on-primary-container/20 pb-4">
                                 <dt class="text-sm">Documentos indexados</dt>
-                                <dd class="text-2xl font-headline font-extrabold text-tertiary-fixed-dim tabular-nums">
+                                <dd class="text-2xl font-headline font-extrabold tabular-nums">
                                     {{ indexedCount() }}/{{ documents().length }}
                                 </dd>
                             </div>

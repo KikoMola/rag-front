@@ -44,9 +44,10 @@
                         size="icon-sm"
                         class="absolute right-1"
                         (click)="deleteConversation($event, conv.id)"
-                        [ngpTooltipTrigger]="'Eliminar conversación'"
+                        ngpTooltipTrigger
                         aria-label="Eliminar conversación"
                     >
+                        <span class="sr-only">Eliminar conversación</span>
                         <svg [lucideIcon]="LucideTrash2" class="size-4"></svg>
                     </button>
                 </li>
@@ -102,9 +103,10 @@
                                         variant="ghost"
                                         size="icon-sm"
                                         (click)="forkFromMessage(msg.messageId)"
-                                        [ngpTooltipTrigger]="'Bifurcar desde aquí'"
+                                        ngpTooltipTrigger
                                         aria-label="Bifurcar conversación desde este mensaje"
                                     >
+                                        <span class="sr-only">Bifurcar desde aquí</span>
                                         <svg [lucideIcon]="LucideGitFork" class="size-4"></svg>
                                     </button>
                                 }
@@ -192,9 +194,10 @@
                                         variant="ghost"
                                         size="icon-sm"
                                         (click)="copyMessage(msg.content, $index)"
-                                        [ngpTooltipTrigger]="copiedIndex() === $index ? 'Copiado' : 'Copiar respuesta'"
+                                        ngpTooltipTrigger
                                         [attr.aria-label]="copiedIndex() === $index ? 'Copiado' : 'Copiar respuesta'"
                                     >
+                                        <span class="sr-only">Copiar respuesta</span>
                                         @if (copiedIndex() === $index) {
                                             <svg [lucideIcon]="LucideCheck" class="size-4 text-primary"></svg>
                                         } @else {
@@ -207,9 +210,10 @@
                                             variant="ghost"
                                             size="icon-sm"
                                             (click)="forkFromMessage(msg.messageId)"
-                                            [ngpTooltipTrigger]="'Bifurcar desde aquí'"
+                                            ngpTooltipTrigger
                                             aria-label="Bifurcar conversación desde este mensaje"
                                         >
+                                            <span class="sr-only">Bifurcar desde aquí</span>
                                             <svg [lucideIcon]="LucideGitFork" class="size-4"></svg>
                                         </button>
                                     }
@@ -229,7 +233,7 @@
                 @for (m of models; track m.id) {
                     <button
                         (click)="selectModel(m)"
-                        [ngpTooltipTrigger]="m.hint + ' · ' + m.model"
+                        [attr.title]="m.hint + ' · ' + m.model"
                         class="flex items-center gap-2 h-8 px-3 rounded-lg text-sm font-medium transition-colors cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface-tint"
                         [class.bg-primary]="selectedModel().id === m.id"
                         [class.text-on-primary]="selectedModel().id === m.id"
@@ -264,9 +268,10 @@
                             variant="danger"
                             size="icon"
                             (click)="stopStream()"
-                            [ngpTooltipTrigger]="'Detener'"
+                            ngpTooltipTrigger
                             aria-label="Detener generación"
                         >
+                            <span class="sr-only">Detener</span>
                             <svg [lucideIcon]="LucideSquare" class="size-4"></svg>
                         </button>
                     } @else {
@@ -275,9 +280,10 @@
                             size="icon"
                             (click)="sendMessage()"
                             [disabled]="!inputValue().trim()"
-                            [ngpTooltipTrigger]="'Enviar (Intro)'"
+                            ngpTooltipTrigger
                             aria-label="Enviar mensaje"
                         >
+                            <span class="sr-only">Enviar (Intro)</span>
                             <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
                         </button>
                     }

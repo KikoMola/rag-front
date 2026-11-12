@@ -203,9 +203,10 @@
                                 variant="danger"
                                 size="icon"
                                 (click)="stopStream()"
-                                [ngpTooltipTrigger]="'Detener'"
+                                ngpTooltipTrigger
                                 aria-label="Detener generación"
                             >
+                                <span class="sr-only">Detener</span>
                                 <svg [lucideIcon]="LucideSquare" class="size-4"></svg>
                             </button>
                         } @else {
@@ -214,9 +215,10 @@
                                 size="icon"
                                 (click)="sendMessage()"
                                 [disabled]="!inputValue().trim()"
-                                [ngpTooltipTrigger]="'Enviar (Intro)'"
+                                ngpTooltipTrigger
                                 aria-label="Enviar mensaje"
                             >
+                                <span class="sr-only">Enviar (Intro)</span>
                                 <svg [lucideIcon]="LucideArrowUp" class="size-5"></svg>
                             </button>
                         }

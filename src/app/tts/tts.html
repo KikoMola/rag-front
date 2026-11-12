@@ -133,9 +133,10 @@
                                     variant="ghost"
                                     size="icon-sm"
                                     [href]="fileUrl(audio.id, true)"
-                                    [ngpTooltipTrigger]="'Descargar MP3'"
+                                    ngpTooltipTrigger
                                     aria-label="Descargar MP3"
                                 >
+                                    <span class="sr-only">Descargar MP3</span>
                                     <svg [lucideIcon]="LucideDownload" [size]="16"></svg>
                                 </a>
                             }
@@ -145,10 +146,11 @@
                                 size="icon-sm"
                                 (click)="requestDelete(audio.id)"
                                 [ngpDialogTrigger]="confirmDeleteDialog"
-                                [ngpTooltipTrigger]="'Eliminar'"
+                                ngpTooltipTrigger
                                 [disabled]="deletingId() === audio.id"
                                 aria-label="Eliminar audio"
                             >
+                                <span class="sr-only">Eliminar</span>
                                 @if (deletingId() === audio.id) {
                                     <svg [lucideIcon]="LucideLoader" [size]="16" class="animate-spin"></svg>
                                 } @else {

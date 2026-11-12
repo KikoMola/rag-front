@@ -92,10 +92,11 @@
                                 (click)="requestDeleteCollection($event, collection.id)"
                                 (keydown.enter)="$event.stopPropagation()"
                                 [ngpDialogTrigger]="confirmDeleteDialog"
-                                [ngpTooltipTrigger]="'Eliminar colección'"
+                                ngpTooltipTrigger
                                 [disabled]="deleting() === collection.id"
                                 aria-label="Eliminar colección"
                             >
+                                <span class="sr-only">Eliminar colección</span>
                                 @if (deleting() === collection.id) {
                                     <svg [lucideIcon]="LucideLoader" class="size-4 animate-spin"></svg>
                                 } @else {

@@ -83,6 +83,79 @@
     --font-label: 'Inter', sans-serif;
 }
 
+/* ─── Tema oscuro ───────────────────────────────────────────────────
+   Redefine los mismos tokens que usan las utilidades de Tailwind, así
+   ninguna plantilla necesita variantes dark:. ThemeService pone
+   data-theme en <html>. */
+
+:root {
+    --toast-success: #4edea3;
+    --toast-error: #ffb4ab;
+    color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --color-surface: #070f22;
+    --color-surface-dim: #040a18;
+    --color-surface-bright: #182a52;
+    --color-surface-container-lowest: #0d1a36;
+    --color-surface-container-low: #0b1630;
+    --color-surface-container: #10203f;
+    --color-surface-container-high: #15254a;
+    --color-surface-container-highest: #1b2d57;
+    --color-surface-variant: #1b2d57;
+    --color-surface-tint: #9093ff;
+
+    --color-primary: #a9acff;
+    --color-primary-container: #7c80f7;
+    --color-primary-fixed: #262b7a;
+    --color-primary-fixed-dim: #373a9b;
+    --color-on-primary: #0a0b3d;
+    --color-on-primary-container: #e1e0ff;
+    --color-on-primary-fixed: #e1e0ff;
+    --color-on-primary-fixed-variant: #c0c1ff;
+
+    --color-secondary: #b9c7df;
+    --color-secondary-container: #2b3a55;
+    --color-secondary-fixed: #2b3a55;
+    --color-secondary-fixed-dim: #3a485b;
+    --color-on-secondary: #233144;
+    --color-on-secondary-container: #d5e3fc;
+    --color-on-secondary-fixed: #d5e3fc;
+    --color-on-secondary-fixed-variant: #b9c7df;
+
+    --color-tertiary: #4edea3;
+    --color-tertiary-container: #005236;
+    --color-tertiary-fixed: #005236;
+    --color-tertiary-fixed-dim: #4edea3;
+    --color-on-tertiary: #003825;
+    --color-on-tertiary-container: #6ffbbe;
+    --color-on-tertiary-fixed: #6ffbbe;
+    --color-on-tertiary-fixed-variant: #6ffbbe;
+
+    --color-error: #ffb4ab;
+    --color-error-container: #5c0b10;
+    --color-on-error: #690005;
+    --color-on-error-container: #ffdad6;
+
+    --color-on-surface: #dee5ff;
+    --color-on-surface-variant: #a3b1db;
+    --color-on-background: #dee5ff;
+    --color-background: #070f22;
+
+    --color-outline: #6d7da6;
+    --color-outline-variant: #2e3d63;
+
+    --color-inverse-surface: #dee5ff;
+    --color-inverse-on-surface: #10203f;
+    --color-inverse-primary: #2e3192;
+
+    --toast-success: #006c49;
+    --toast-error: #ba1a1a;
+}
+
 body {
     font-family: var(--font-body);
     color: var(--color-on-surface);
@@ -93,6 +166,8 @@ body {
 /* ─── Ayudas emergentes (ng-primitives/tooltip) ─────────────────────── */
 
 [ngpTooltip] {
+    /* ng-primitives calcula left/top; la posición la pone la hoja de estilos */
+    position: absolute;
     z-index: 60;
     max-width: 16rem;
     padding: 0.375rem 0.625rem;
@@ -149,11 +224,11 @@ body {
 }
 
 .app-toast[data-kind='success'] .app-toast-icon {
-    color: var(--color-tertiary-fixed-dim);
+    color: var(--toast-success);
 }
 
 .app-toast[data-kind='error'] .app-toast-icon {
-    color: #ffb4ab;
+    color: var(--toast-error);
 }
 
 .app-toast[data-kind='info'] .app-toast-icon {
@@ -164,6 +239,24 @@ body {
     from {
         opacity: 0;
         translate: 0 1rem;
+    }
+}
+
+/* ─── Menú desplegable del móvil ────────────────────────────────────── */
+
+.mobile-drawer {
+    animation: drawer-in 200ms ease-out;
+}
+
+@keyframes drawer-in {
+    from {
+        transform: translateX(-100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mobile-drawer {
+        animation: none;
     }
 }
 

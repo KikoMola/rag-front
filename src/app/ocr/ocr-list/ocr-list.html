@@ -140,9 +140,10 @@
                                     (click)="downloadMarkdown($event, doc.id, doc.filename)"
                                     (keyup.enter)="$event.stopPropagation()"
                                     [disabled]="downloadingId() === doc.id"
-                                    [ngpTooltipTrigger]="'Descargar Markdown'"
+                                    ngpTooltipTrigger
                                     aria-label="Descargar markdown"
                                 >
+                                    <span class="sr-only">Descargar Markdown</span>
                                     @if (downloadingId() === doc.id) {
                                         <svg [lucideIcon]="LucideLoader" [size]="16" class="animate-spin"></svg>
                                     } @else {
@@ -157,10 +158,11 @@
                                 (click)="requestDelete($event, doc.id)"
                                 (keyup.enter)="$event.stopPropagation()"
                                 [ngpDialogTrigger]="confirmDeleteDialog"
-                                [ngpTooltipTrigger]="'Eliminar'"
+                                ngpTooltipTrigger
                                 [disabled]="deletingId() === doc.id"
                                 aria-label="Eliminar documento"
                             >
+                                <span class="sr-only">Eliminar</span>
                                 @if (deletingId() === doc.id) {
                                     <svg [lucideIcon]="LucideLoader" [size]="16" class="animate-spin"></svg>
                                 } @else {
