@@ -306,34 +306,18 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label for="tts-voice" class="block text-sm font-medium text-on-surface mb-1.5">Voz</label>
-                        <select
-                            id="tts-voice"
+                        <app-select
                             formControlName="voice"
-                            class="w-full px-4 py-3 bg-surface-container-high rounded-lg text-sm text-on-surface focus:outline-2 focus:outline-surface-tint outline-none cursor-pointer"
-                        >
-                            @for (group of voiceGroups(); track group.language) {
-                                <optgroup [label]="group.language">
-                                    @for (voice of group.voices; track voice.id) {
-                                        <option [value]="voice.id">
-                                            {{ voice.name }} ({{ voice.gender === 'female' ? 'mujer' : 'hombre' }})
-                                        </option>
-                                    }
-                                </optgroup>
-                            }
-                        </select>
+                            label="Voz"
+                            [options]="voiceOptions()"
+                        />
                     </div>
                     <div>
-                        <label for="tts-speed" class="block text-sm font-medium text-on-surface mb-1.5">Velocidad</label>
-                        <select
-                            id="tts-speed"
+                        <app-select
                             formControlName="speed"
-                            class="w-full px-4 py-3 bg-surface-container-high rounded-lg text-sm text-on-surface focus:outline-2 focus:outline-surface-tint outline-none cursor-pointer"
-                        >
-                            @for (speed of speedOptions; track speed) {
-                                <option [ngValue]="speed">{{ speed }}×{{ speed === 1 ? ' (normal)' : '' }}</option>
-                            }
-                        </select>
+                            label="Velocidad"
+                            [options]="speedSelectOptions"
+                        />
                     </div>
                 </div>
 

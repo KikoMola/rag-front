@@ -46,6 +46,8 @@ import { TtsService } from '../core/services/tts.service';
 import type { TtsAudioListItem, TtsVoice } from '../core/models/tts-audio.model';
 import { AppButton } from '../shared/ui/button';
 import { PageHeader } from '../shared/ui/page-header';
+import { AppSelect } from '../shared/ui/select';
+import type { SelectOption } from '../shared/ui/select';
 import { ToastService } from '../shared/ui/toast';
 
 const POLL_INTERVAL_MS = 2000;
@@ -71,6 +73,7 @@ interface ProgressSample {
     selector: 'app-tts',
     imports: [
         ReactiveFormsModule,
+        AppSelect,
         LucideDynamicIcon,
         NgpDialogTrigger,
         NgpDialog,
@@ -104,6 +107,11 @@ export class Tts implements OnInit {
 
     protected readonly acceptedExtensions = ACCEPTED_EXTENSIONS.join(',');
     protected readonly speedOptions = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
+    protected readonly speedSelectOptions: SelectOption<number>[] = this.speedOptions.map((speed) => ({
+        value: speed,
+        label: `${String(speed).replace('.', ',')}×`,
+        description: speed === 1 ? 'normal' : undefined,
+    }));
 
     private readonly ttsService = inject(TtsService);
     private readonly fb = inject(FormBuilder);
@@ -126,6 +134,18 @@ export class Tts implements OnInit {
     formError = signal<string | null>(null);
     deletingId = signal<number | null>(null);
     pendingDeleteId = signal<number | null>(null);
+
+    /** Voces para el desplegable, agrupadas por idioma. */
+    voiceOptions = computed<SelectOption[]>(() =>
+        this.voiceGroups().flatMap((group) =>
+            group.voices.map((voice) => ({
+                value: voice.id,
+                label: voice.name,
+                description: voice.gender === 'female' ? 'mujer' : 'hombre',
+                group: group.language,
+            })),
+        ),
+    );
 
     voiceGroups = computed<VoiceGroup[]>(() => {
         const groups: VoiceGroup[] = [];

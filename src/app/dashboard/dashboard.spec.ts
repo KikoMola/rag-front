@@ -101,8 +101,12 @@ describe('Dashboard', () => {
 
     it('should only offer collections with documents as question targets', () => {
         const fixture = init();
-        const options = [...fixture.nativeElement.querySelectorAll('#home-target option')] as HTMLOptionElement[];
-        expect(options.map((o) => o.textContent!.trim().split(' ·')[0])).toEqual(['Chat general', 'Test Collection']);
+        const options = fixture.componentInstance['targetOptions']();
+        expect(options.map((o) => o.label)).toEqual(['Chat general', 'Test Collection']);
+        expect(options[1]).toEqual(
+            expect.objectContaining({ value: '1', description: '5 documentos', group: 'Colecciones' }),
+        );
+        expect(fixture.nativeElement.querySelector('[role="combobox"]').textContent).toContain('Chat general');
     });
 
     it('should send the question to the general chat by default', () => {

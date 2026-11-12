@@ -17,25 +17,14 @@
             (keydown)="onQuestionKeydown($event)"
         ></textarea>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <label for="home-target" class="text-sm text-on-surface-variant">Preguntar a</label>
-            <select
-                id="home-target"
-                [value]="target()"
-                (change)="target.set($any($event.target).value)"
-                class="h-9 max-w-64 rounded-lg bg-surface-container-high px-3 text-sm text-on-surface cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-surface-tint"
-            >
-                <option [value]="GENERAL_CHAT">Chat general</option>
-                @if (askableCollections().length) {
-                    <optgroup label="Colecciones">
-                        @for (collection of askableCollections(); track collection.id) {
-                            <option [value]="'' + collection.id">
-                                {{ collection.name }} · {{ collection.document_count }}
-                                {{ collection.document_count === 1 ? 'documento' : 'documentos' }}
-                            </option>
-                        }
-                    </optgroup>
-                }
-            </select>
+            <app-select
+                class="w-80 max-w-full"
+                size="sm"
+                label="Preguntar a"
+                labelPosition="inline"
+                [options]="targetOptions()"
+                [(value)]="target"
+            />
             <span class="text-xs text-on-surface-variant">
                 @if (targetCollection()) {
                     Responde solo con sus documentos y cita las fuentes.

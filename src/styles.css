@@ -296,6 +296,60 @@ body {
     background: var(--color-outline-variant);
 }
 
+/* ─── Desplegables (ng-primitives/select, ver AppSelect) ────────────── */
+
+.app-select-dropdown {
+    position: absolute;
+    z-index: 60;
+    min-width: var(--ngp-select-width);
+    max-height: min(20rem, var(--ngp-select-available-height, 20rem));
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 0.25rem;
+    border-radius: 0.625rem;
+    background: var(--color-surface-container-lowest);
+    color: var(--color-on-surface);
+    border: 1px solid var(--color-outline-variant);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    outline: none;
+    transform-origin: var(--ngp-select-transform-origin);
+    animation: tooltip-in 120ms ease-out;
+}
+
+.app-select-group {
+    padding: 0.5rem 0.625rem 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+}
+
+.app-select-dropdown [ngpSelectOption] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+}
+
+.app-select-dropdown [ngpSelectOption][data-active] {
+    background: var(--color-surface-container-high);
+}
+
+.app-select-dropdown [ngpSelectOption][data-selected] {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.app-select-dropdown [ngpSelectOption][data-disabled] {
+    opacity: 0.5;
+    cursor: default;
+}
+
 /* ─── Ventanas emergentes (ng-primitives/popover) ───────────────────── */
 
 [ngpPopover] {

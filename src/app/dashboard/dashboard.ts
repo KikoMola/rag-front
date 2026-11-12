@@ -27,13 +27,15 @@ import type { ConversationListItem } from '../core/models/conversation.model';
 import type { TtsAudioListItem } from '../core/models/tts-audio.model';
 import { AppButton } from '../shared/ui/button';
 import { PageHeader } from '../shared/ui/page-header';
+import { AppSelect } from '../shared/ui/select';
+import type { SelectOption } from '../shared/ui/select';
 
 /** Destino de la pregunta: el chat general o una colección concreta. */
 const GENERAL_CHAT = 'general';
 
 @Component({
     selector: 'app-dashboard',
-    imports: [LucideDynamicIcon, RouterLink, AppButton, PageHeader, NgpPopover, NgpPopoverTrigger],
+    imports: [LucideDynamicIcon, RouterLink, AppButton, AppSelect, PageHeader, NgpPopover, NgpPopoverTrigger],
     templateUrl: './dashboard.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -70,6 +72,15 @@ export class Dashboard implements OnInit {
 
     /** Solo se puede preguntar a colecciones que tienen documentos. */
     protected readonly askableCollections = computed(() => this.collections().filter((c) => c.document_count > 0));
+    protected readonly targetOptions = computed<SelectOption[]>(() => [
+        { value: GENERAL_CHAT, label: 'Chat general', description: 'sin documentos' },
+        ...this.askableCollections().map((c) => ({
+            value: String(c.id),
+            label: c.name,
+            description: `${c.document_count} ${c.document_count === 1 ? 'documento' : 'documentos'}`,
+            group: 'Colecciones',
+        })),
+    ]);
     protected readonly targetCollection = computed(() =>
         this.collections().find((c) => String(c.id) === this.target()),
     );
